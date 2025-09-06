@@ -183,7 +183,7 @@
   function addCmd(c){ if(!available.includes(c)){ available.push(c); if(!available.includes("ekwipunek")) available.push("ekwipunek"); showHint(); } }
   function removeCmd(c){ const i = available.indexOf(c); if(i>-1){ available.splice(i,1); showHint(); } }
   function showHint(){ hint.style.display="block"; hint.innerHTML="Dostępne: " + (available.length ? available.map(c=>"<b>"+escapeHtml(c)+"</b>").join(", ") : "—") + "."; }
- 
+  
   /* === Phone Minigame Integration === */
   function openPhoneGame() {
     const ov = document.getElementById('phoneOverlay');
@@ -315,8 +315,8 @@ SM.reg("rozmowa_empatia_klucz", {
 SM.reg("rozmowa_empatia_dworzec", {
     async enter() {
         await say([
-           "\"Pobiegł w stronę starego dworca. Jakby go coś goniło. Tyle widziałam.\"",
-           "Kobieta kończy rozmowę i wraca do pracy. Czujesz jednak, że coś zachowała dla siebie."
+            "\"Pobiegł w stronę starego dworca. Jakby go coś goniło. Tyle widziałam.\"",
+            "Kobieta kończy rozmowę i wraca do pracy. Czujesz jednak, że coś zachowała dla siebie."
         ]);
         setCmds([]);
         await new Promise(r => setTimeout(r, 1500));
@@ -341,32 +341,32 @@ SM.reg("rozmowa_empatia_dworzec", {
       return false;
     }
   });
- 
+  
   SM.reg("bar", {
       async enter() {
           await say([
-              "Wnętrze baru jest prawie puste. Siadasz przy ladzie.",
-              "Barman bez słowa stawia przed tobą talerz z gorącą jajecznicą i kubek czarnej kawy."
+                "Wnętrze baru jest prawie puste. Siadasz przy ladzie.",
+                "Barman bez słowa stawia przed tobą talerz z gorącą jajecznicą i kubek czarnej kawy."
           ]);
           setCmds(["zjedz posiłek"]);
       },
       handle(t) {
           if(t === "zjedz posiłek"){
-              removeCmd(t);
-              say([
-                  "Mechanicznie przeżuwasz jedzenie. Ciepło posiłku powoli rozchodzi się po ciele, ale nie przynosi ulgi.",
-                  "Wręcz przeciwnie – w tej chwili normalności, brutalna prawda uderza cię z pełną siłą.",
-                  "List. Sen. Fotograf. To wszystko dzieje się naprawdę.",
-                  "Musisz zadzwonić do reszty. Natychmiast."
-              ]).then(() => {
-                  typeText("Sięgasz do kieszeni... pustka. Cholera. W pośpiechu zostawiłeś telefon w mieszkaniu.");
-                  setCmds(["wróć do mieszkania"]);
-              });
-              return true;
+                removeCmd(t);
+                say([
+                    "Mechanicznie przeżuwasz jedzenie. Ciepło posiłku powoli rozchodzi się po ciele, ale nie przynosi ulgi.",
+                    "Wręcz przeciwnie – w tej chwili normalności, brutalna prawda uderza cię z pełną siłą.",
+                    "List. Sen. Fotograf. To wszystko dzieje się naprawdę.",
+                    "Musisz zadzwonić do reszty. Natychmiast."
+                ]).then(() => {
+                    typeText("Sięgasz do kieszeni... pustka. Cholera. W pośpiechu zostawiłeś telefon w mieszkaniu.");
+                    setCmds(["wróć do mieszkania"]);
+                });
+                return true;
           }
           if (t === "wróć do mieszkania") {
-              SM.go("powrot_do_mieszkania");
-              return true;
+                SM.go("powrot_do_mieszkania");
+                return true;
           }
           return false;
       }
@@ -375,34 +375,34 @@ SM.reg("rozmowa_empatia_dworzec", {
   SM.reg("powrot_do_mieszkania", {
       async enter() {
           await say([
-              "Biegniesz z powrotem na górę. Mieszkanie wita cię złowrogą ciszą.",
-              "Coś się zmieniło. Na regale jedna z książek jest lekko wysunięta."
+                "Biegniesz z powrotem na górę. Mieszkanie wita cię złowrogą ciszą.",
+                "Coś się zmieniło. Na regale jedna z książek jest lekko wysunięta."
           ]);
           setCmds(["weź telefon", "sprawdź książkę"]);
       },
       handle(t) {
           if (t === "sprawdź książkę" && !G.bookChecked) {
-              G.bookChecked = true;
-              removeCmd(t);
-              say([
-                  "Podchodzisz do regału. To stara, zniszczona powieść grozy.",
-                  "Otwierasz ją. W środku, jako zakładka, tkwi stara fotografia.",
-                  "Widzisz na niej czwórkę dzieciaków bawiących się nocą na placu zabaw. Rozpoznajesz siebie, Sarę, Karolinę i Monikę.",
-                  "Na odwrocie ktoś napisał drżącym pismem: 'Czasem prawda ukrywa się w cieniu, a czasem w świetle'."
-              ]).then(() => {
-                 writeLine('<img src="fotografia.png" alt="Stara, zniszczona fotografia czwórki dzieci" style="max-width: 100%; max-height: 400px; border: 1px solid var(--line); border-radius: 4px; margin-top: 10px;">');
-                  scrollBottom(); 
-              });
-              if (window.Inventory) Inventory.add("stara fotografia");
-              if (window.Sanity) Sanity.add(-1, "street:photo_clue");
-              return true;
+                G.bookChecked = true;
+                removeCmd(t);
+                say([
+                    "Podchodzisz do regału. To stara, zniszczona powieść grozy.",
+                    "Otwierasz ją. W środku, jako zakładka, tkwi stara fotografia.",
+                    "Widzisz na niej czwórkę dzieciaków bawiących się nocą na placu zabaw. Rozpoznajesz siebie, Sarę, Karolinę i Monikę.",
+                    "Na odwrocie ktoś napisał drżącym pismem: 'Czasem prawda ukrywa się w cieniu, a czasem w świetle'."
+                ]).then(() => {
+                   writeLine('<img src="fotografia.png" alt="Stara, zniszczona fotografia czwórki dzieci" style="max-width: 100%; max-height: 400px; border: 1px solid var(--line); border-radius: 4px; margin-top: 10px;">');
+                   scrollBottom(); 
+                });
+                if (window.Inventory) Inventory.add("stara fotografia");
+                if (window.Sanity) Sanity.add(-1, "street:photo_clue");
+                return true;
           }
           if (t === "weź telefon") {
-              removeCmd(t);
-              typeText("Chwytasz telefon leżący na stoliku i uruchamiasz go...").then(() => {
-                  openPhoneGame();
-              });
-              return true;
+                removeCmd(t);
+                typeText("Chwytasz telefon leżący na stoliku i uruchamiasz go...").then(() => {
+                    openPhoneGame();
+                });
+                return true;
           }
           return false;
       }
@@ -420,7 +420,7 @@ SM.reg("rozmowa_empatia_dworzec", {
       nextBtn.disabled = false;
     }
   });
- 
+  
   function handleInput(){
     const t = cmd.value.trim().toLowerCase();
     if(!t) return;
@@ -434,7 +434,7 @@ SM.reg("rozmowa_empatia_dworzec", {
     }
     cmd.value = ""; cmd.focus();
   }
- 
+  
   send.addEventListener('click', handleInput);
   cmd.addEventListener('keydown', e => { if(e.key === "Enter"){ e.preventDefault(); handleInput(); } });
   speed.addEventListener('input', () => { speedIdx = +speed.value; speedLabel.textContent = labels[speedIdx]; });
@@ -444,7 +444,10 @@ SM.reg("rozmowa_empatia_dworzec", {
     window.Inventory?.clear?.();
     window.location.reload();
   });
- 
+  nextBtn.addEventListener('click', () => {
+    window.location.href = NEXT_FILE;
+  });
+  
   SM.go("start");
 })();
 </script>
