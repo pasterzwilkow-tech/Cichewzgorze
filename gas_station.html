@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ciche Wzgórze - Demo</title>
+    <style>
+        :root {
+            --bg: #07090c;
+            --fg: #e6e6e6;
+            --muted: #9aa0a6;
+            --accent: #c7a26d;
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--fg);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            overflow: hidden; /* Ukrywa paski przewijania */
+        }
+
+        /* --- Animacja Mgły --- */
+        #fog-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% 50%, transparent, var(--bg) 70%);
+            z-index: 1;
+        }
+
+        .fog {
+            position: absolute;
+            background: radial-gradient(circle, rgba(154, 160, 166, 0.1) 0%, rgba(7, 9, 12, 0) 60%);
+            border-radius: 50%;
+            animation: moveFog 40s linear infinite;
+        }
+
+        .fog.fog-1 {
+            width: 800px;
+            height: 800px;
+            top: -200px;
+            left: -300px;
+            animation-duration: 45s;
+        }
+
+        .fog.fog-2 {
+            width: 1200px;
+            height: 1200px;
+            bottom: -500px;
+            right: -600px;
+            animation-duration: 60s;
+            animation-delay: -15s;
+        }
+
+        @keyframes moveFog {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+            25% { transform: translate(100px, 50px) scale(1.2); opacity: 0.6; }
+            50% { transform: translate(-50px, 100px) scale(1); opacity: 0.9; }
+            75% { transform: translate(50px, -100px) scale(1.3); opacity: 0.7; }
+            100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+        }
+        /* --- Koniec animacji mgły --- */
+
+        .content {
+            position: relative;
+            z-index: 10;
+            padding: 20px;
+        }
+
+        .content > * {
+            opacity: 0;
+            animation: fadeInText 3s forwards;
+        }
+        
+        h1 {
+            font-size: 2em;
+            color: var(--accent);
+            margin-bottom: 20px;
+            animation-delay: 1s;
+        }
+
+        p {
+            font-size: 1.2em;
+            color: var(--muted);
+            max-width: 600px;
+            line-height: 1.8;
+        }
+
+        p.line-1 { animation-delay: 2.5s; }
+        p.line-2 { animation-delay: 4s; }
+        p.line-3 { animation-delay: 5.5s; }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: bold;
+            transition: text-shadow 0.3s;
+        }
+        a:hover {
+            text-shadow: 0 0 8px var(--accent);
+        }
+
+        @keyframes fadeInText {
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="fog-container">
+        <div class="fog fog-1"></div>
+        <div class="fog fog-2"></div>
+    </div>
+    <div class="content">
+        <h1>Dziękuję za zagranie w demo Ciche Wzgórze.</h1>
+        <p class="line-1">Prace nad pełną wersją wciąż trwają.</p>
+        <p class="line-2">Będę wdzięczny za wszelkie opinie i uwagi.</p>
+        <p class="line-3">Znalazłeś błąd lub masz pomysł? Napisz na adres:<br>
+            <a href="mailto:pasterzwilkow@gmail.com">pasterzwilkow@gmail.com</a>
+        </p>
+    </div>
+</body>
+</html>
