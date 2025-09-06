@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ciche Wzgórze - Zapomniane Historie</title>
+<style>
+  :root { 
+    --bg: #1a1816; 
+    --paper-bg: #2a2826;
+    --fg: #d1c7b9; 
+    --muted: #a1978a;
+    --accent: #d4ac6e; 
+    --red: #c75252; 
+    --header: #4a4642;
+  }
+  html, body {
+    margin: 0;
+    background-color: var(--bg);
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39tbW1dXV1ra2tra2tpaWlqampubm5sbm1qb2t3d3d2dnbEZ5l1AAAAVElEQVR42t3PAQkAMAwDMe69g7d3d2eRVBYs8v3a233s30pFmqf5v4dQCEMhDAs9C8OIQiHEYRAOR4QwCEMhDIQw7x3g4yEMQxCFICEQQgghvIYCEYQhQpDRggs/s6Cw+gAAAABJRU5ErkJggg==');
+    color: var(--fg);
+    font-family: 'Georgia', 'Times New Roman', serif;
+  }
+  .container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px 40px;
+    background: var(--paper-bg);
+    border: 1px solid var(--header);
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+  }
+  header {
+    text-align: center;
+    border-bottom: 2px solid var(--header);
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+  }
+  h1 {
+    font-size: 3em;
+    color: var(--accent);
+    margin: 0;
+    font-variant: small-caps;
+    letter-spacing: 2px;
+  }
+  header p {
+      font-style: italic;
+      color: var(--muted);
+  }
+  h2 {
+    font-size: 2em;
+    color: var(--accent);
+    border-bottom: 1px solid var(--header);
+    padding-bottom: 10px;
+    margin-top: 40px;
+    font-variant: small-caps;
+  }
+  h3 {
+    font-size: 1.5em;
+    color: var(--accent);
+    font-variant: small-caps;
+    letter-spacing: 1px;
+  }
+  p {
+    line-height: 1.8;
+    font-size: 1.1em;
+    text-align: justify;
+    color: var(--muted);
+  }
+  .post-date {
+    font-style: italic;
+    color: #777;
+    font-size: 0.9em;
+    text-align: right;
+    margin-top: -10px;
+    margin-bottom: 20px;
+  }
+  .legend, .found-text, .interview-quote {
+    border-left: 4px solid var(--red);
+    padding: 15px 20px;
+    margin: 20px;
+    font-style: italic;
+    background: rgba(239, 68, 68, 0.05);
+    border-radius: 0 5px 5px 0;
+  }
+  .found-text {
+      border-color: var(--accent);
+      background: rgba(212, 172, 110, 0.05);
+  }
+  .interview-quote {
+      border-color: #6b7280;
+      background: rgba(107, 114, 128, 0.05);
+  }
+  .separator {
+      text-align: center;
+      font-size: 2em;
+      color: var(--header);
+      margin: 40px 0;
+      letter-spacing: 10px;
+  }
+  .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+  }
+  .gallery img {
+      width: 100%;
+      height: auto;
+      border: 3px solid var(--header);
+      cursor: pointer;
+      transition: transform 0.2s, filter 0.2s;
+      filter: grayscale(0.5) sepia(0.3);
+  }
+  .gallery img:hover {
+      transform: scale(1.05);
+      filter: grayscale(0) sepia(0);
+  }
+#memory-trigger:hover {
+    box-shadow: 0 0 15px var(--red);
+    filter: grayscale(0) sepia(0.4);
+}
+  .archive-entry {
+      background: rgba(0,0,0,0.1);
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      border: 1px solid var(--header);
+  }
+  .archive-entry h3 { margin: 0 0 5px; color: var(--fg); }
+  .comments-section {
+      margin-top: 30px;
+      background: rgba(0,0,0,0.05);
+      padding: 10px 20px;
+      border-radius: 5px;
+      border-top: 1px solid var(--header);
+  }
+    .comments-section h4 {
+      color: var(--fg);
+      margin-bottom: 15px;
+      font-variant: small-caps;
+   }
+  .comment {
+      border-top: 1px dashed var(--header);
+      padding: 15px 0;
+  }
+  .comment:first-of-type {
+      border-top: none;
+      padding-top: 0;
+  }
+    .comment p {
+       margin: 5px 0;
+   }
+  .comment-author {
+      font-weight: bold;
+      color: var(--accent);
+  }
+  .comment-date {
+      font-size: 0.8em;
+      color: #777;
+  }
+  .author-reply {
+      border-left: 3px solid var(--accent);
+      padding-left: 15px;
+      margin-top: 10px;
+      font-size: 0.95em;
+  }
+ 
+  footer {
+    margin-top: 50px;
+    text-align: center;
+    font-size: 0.9em;
+    color: #666;
+    border-top: 1px solid var(--header);
+    padding-top: 20px;
+  }
+ 
+  .return-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background-color: var(--accent);
+      color: var(--bg);
+      border: 1px solid #000;
+      border-radius: 8px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      z-index: 100;
+      transition: background-color 0.2s;
+  }
+  .return-button:hover {
+      background-color: #e8c392;
+  }
+</style>
+</head>
+<body>
+
+<button class="return-button" id="returnBtn">wróć</button>
+
+<div class="container">
+  <header>
+    <h1>Ciche Wzgórze – Zapomniane Historie</h1>
+    <p>Blog poświęcony prawdzie ukrytej we mgle. Prowadzący: Jakub Gralewski.</p>
+  </header>
+
+  <article>
+    <h2>Wstęp: Dlaczego nie mogę zapomnieć?</h2>
+    <p class="post-date"><em>Opublikowano: 5 marca 2015</em></p>
+    <p>Nazywam się Jakub Gralewski. Niektórzy nazwaliby mnie lokalnym historykiem, inni pewnie szaleńcem. Od lat badam zapomniane miejsca w Polsce, te małe punkty na mapie, o których milczą przewodniki. Ale żadne nie nawiedza moich myśli tak, jak Ciche Wzgórze. Oficjalnie to tylko kolejna upadła osada górnicza w sercu Beskidu Wyspowego, porzucona po pożarze sierocińca w 2007 roku. Tyle mówią dokumenty – suche, bezduszne słowa, które kłamią przez zaniechanie.</p>
+    <p>Bo ja tu byłem. Pierwszy raz, jako młody chłopak z aparatem, zafascynowany opowieściami o „morzu mgieł”. Chodziłem po tych ulicach, czułem na karku oddech mgły i widziałem rzeczy, których nie potrafiłem wytłumaczyć. Cienie w oknach opuszczonych domów. Szepty w lesie, które brzmiały jak moje własne imię. Wiem, że to miejsce żyje. Oddycha. I pamięta.</p>
+    <p>Ten blog jest moją obsesją, owocem dekady badań. To próba zebrania w jednym miejscu oficjalnych kronik, mrocznych legend, szeptów i dowodów, które przez lata ignorowano. To próba zrozumienia, dlaczego ziemia w Cichym Wzgórzu jest tak głęboko skażona smutkiem, strachem i czymś znacznie starszym. To, co tu przeczytacie, nie jest zwykłą historią. To ostrzeżenie, mapa koszmaru i, mam nadzieję, klucz.</p>
+
+    <div class="comments-section">
+        <h4>Komentarze do wpisu:</h4>
+        <div class="comment">
+            <p><span class="comment-author">Mirek_L</span> <span class="comment-date">- 8 marca 2015</span></p>
+            <p>Też tam byłem jako dzieciak. Zawsze czułem, że coś jest nie tak z tym miejscem. Cieszę się, że ktoś w końcu o tym pisze. Czekam na więcej.</p>
+        </div>
+    </div>
+
+    <div class="separator">◆ ◆ ◆</div>
+
+    <h2>Historia Oficjalna: Fasada Postępu</h2>
+    <p class="post-date"><em>Opublikowano: 12 lipca 2016</em></p>
+    <h4>Kopalnia "Nadzieja" (XIX w. – 1954)</h4>
+    <p>U zarania rewolucji przemysłowej, w połowie XIX wieku, geodeci odkryli w sercu Beskidu Wyspowego nietypowe dla regionu, ale rzekomo bogate złoże węgla. Tak narodziła się osada górnicza Ciche Wzgórze i jej serce – kopalnia "Nadzieja". Przez dekady wydobycie napędzało rozwój miasteczka, które rosło, budując szkołę, kościół i mały rynek.</p>
+    <p>Jednak w 1954 roku wszystko się skończyło. Oficjalne raporty mówiły o "wyczerpaniu złoża i nierentowności", ale starsi mieszkańcy opowiadali inną historię – o wypadkach tak strasznych, że nie trafiały do gazet, i o ludziach, którzy wjeżdżali do szybu i nigdy nie wracali. Kopalnię zamknięto w pośpiechu, a miasteczko zaczęło umierać.</p>
+   
+    <h4>Sierociniec im. Marii S. (1958 – 2007)</h4>
+    <p>Po upadku kopalni miasteczko umierało. Wtedy, pod koniec lat 50., pojawiła się nowa nadzieja w postaci Marii S. – charyzmatycznej, lecz surowej kobiety z niejasną przeszłością. Dzięki swoim wpływom i niezachwianej determinacji, na skraju lasu, niebezpiecznie blisko zasypanych szybów kopalni, założyła sierociniec swojego imienia. Placówka miała być ostoją dla pokrzywdzonych przez los dzieci i nowym sercem Cichego Wzgórza. Przez ponad pięćdziesiąt lat sierociniec funkcjonował, przyjmując dzieci z całego regionu.</p>
+    <p>Ta idylliczna wizja zakończyła się w 2007 roku, gdy placówkę strawił tragiczny pożar. Władze oficjalnie uznały, że Maria S. zginęła w płomieniach, jednak jej ciała nigdy nie odnaleziono.</p>
+
+    <div class="comments-section">
+        <h4>Komentarze do wpisu:</h4>
+        <div class="comment">
+            <p><span class="comment-author">KarolinaWnuczka</span> <span class="comment-date">- 20 lipca 2016</span></p>
+            <p>Mój dziadek pracował w 'Nadziei'. Nigdy nie chciał o tym mówić. Mówił tylko, że 'węgiel nie był jedyną rzeczą, którą tam wykopali'.</p>
+        </div>
+    </div>
+
+    <div class="separator">◆ ◆ ◆</div>
+   
+    <h2>Głosy Przeszłości: Fragmenty Znalezionych Zapisków</h2>
+    <p class="post-date"><em>Opublikowano: 22 maja 2018</em></p>
+    <div class="found-text">
+        <p><strong>Fragment z dziennika górnika, Ignacego Brzozy, 1952 r.</strong></p>
+        <p>"...znowu to samo. Światła na poziomie czwartym migoczą i gasną bez powodu. Chłopaki nie chcą tam zjeżdżać. Mówią, że słychać płacz dziecka. Wczoraj Staszek wrócił na górę blady jak ściana, rzucił kilof i powiedział, że nigdy więcej. Twierdził, że w ciemności coś dotknęło jego ramienia. Coś zimnego i mokrego. Kierownik mówi, że to wina instalacji i zmęczenia, ale my wiemy swoje. Ta góra nie chce, żebyśmy tu byli."</p>
+    </div>
+    <div class="found-text">
+        <p><strong>Niedokończony list znaleziony w opuszczonym domu, ok. 2002 r.</strong></p>
+        <p>"Kochana siostro, musisz mi pomóc. Od kiedy oddaliśmy Elżbietę do tego sierocińca, dzieje się z nią coś złego. Ta dyrektorka, Maria S., pisze, że dziecko jest trudne, że ma koszmary. Ale Elżbieta w ostatnim liście napisała, że 'pani dyrektor uczy ich słuchać szeptów z lasu'. Co to ma znaczyć? Pisze też o Zosi, innej dziewczynce, która jest bardzo zamknięta w sobie i dziwna. Boję się o nie obie. Jadę tam w przyszłym tygodniu, muszę zabrać Elżbietę, zanim..."</p>
+        <p>(List w tym miejscu jest przerwany, rozdarty.)</p>
+    </div>
+
+    <div class="comments-section">
+        <h4>Komentarze do wpisu:</h4>
+        <div class="comment">
+            <p><span class="comment-author">JanKowalski</span> <span class="comment-date">- 25 maja 2018</span></p>
+            <p>Ten list o Elżbiecie jest przerażający. 'Uczy ich słuchać szeptów z lasu'... To brzmi jak jakaś sekta, a nie placówka opiekuńcza.</p>
+        </div>
+    </div>
+
+    <h2>Mroczne Legendy: Prawdziwe Oblicze Wzgórza</h2>
+    <p class="post-date"><em>Opublikowano: 30 października 2020</em></p>
+    <p class="legend">Mówi się, że podczas drążenia pierwszych szybów "Nadziei", górnicy nie dokopali się tylko do węgla. Obudzili coś starożytnego, co spało głęboko pod wzgórzami. Zaczęło się od szeptów w ciemności, które naśladowały głosy bliskich, wzywając górników w głąb nieoznakowanych tuneli. Później pojawiły się cienie przemykające na skraju światła lamp i nagłe, gwałtowne ataki paranoi. Ludzie zaczęli znikać. Legenda głosi, że kopalnia nie została zamknięta – została porzucona w panice, a jej wejścia zapieczętowano, by uwięzić to, co obudzono.</p>
+    <p class="legend">Mgła w Cichym Wzgórzu nie jest zwyczajna. To nie jest zjawisko meteorologiczne, to byt. Starsi mieszkańcy nazywają ją "Cichą Mgłą" i wierzą, że jest to fizyczna manifestacja energii tego miejsca – bytu, który żywi się wspomnieniami, żalem i poczuciem winy. Mgła potrafi materializować najgorsze lęki i grzechy, czyniąc je niebezpiecznie realnymi. To ona myli ścieżki w lesie i sprawia, że cienie wydają się poruszać. To ona szepcze do tych, którzy mają coś na sumieniu.</p>
+   
+    <div class="comments-section">
+        <h4>Komentarze do wpisu:</h4>
+        <div class="comment">
+            <p><span class="comment-author">Tomek</span> <span class="comment-date">- 1 listopada 2020</span></p>
+            <p>Zgubiłem się w tej mgle raz, jakieś 15 lat temu, na pół godziny. Przysięgam, że słyszałem, jak ktoś woła mnie po imieniu, chociaż byłem sam. Uciekłem stamtąd i nigdy nie wróciłem.</p>
+        </div>
+    </div>
+   
+    <div class="separator">◆ ◆ ◆</div>
+
+    <h2>Wywiady i Zeznania</h2>
+    <p class="post-date"><em>Opublikowano: 19 kwietnia 2022</em></p>
+    <h3>"Tego lasu trzeba się bać." – Rozmowa z Panem Eugeniuszem, byłym mieszkańcem.</h3>
+    <p>Udało mi się odnaleźć jednego z ostatnich ludzi, którzy dorastali w Cichym Wzgórzu w latach 60. Pan Eugeniusz, dziś starszy człowiek, zgodził się na rozmowę, choć z wyraźną niechęcią.</p>
+    <div class="interview-quote" style="border-color: #6b7280; background: rgba(107, 114, 128, 0.05);">
+        <p>"Pamiętam sierociniec jak przez mgłę. Dosłownie. Była tam dyscyplina, to na pewno. Pani Maria S. potrafiła jednym spojrzeniem zmrozić ci krew w żyłach, a następnego dnia przynosiła cukierki. Byliśmy jej wdzięczni, ale... baliśmy się jej. Miała jedną, żelazną zasadę, ważniejszą niż pacierz: 'Nie wchodzić do lasu po zmroku'. Mówiła, że las zabiera niegrzeczne dzieci. I zabierał. Pamiętam Janka i Piotrka Rojków. Zniknęli. Po prostu wyszli się bawić i nie wrócili. Pani Maria zorganizowała poszukiwania, ale czułem, że ona nie była zaskoczona. Jakby wiedziała, że las ich weźmie. To nie było miejsce dla dzieci. To było... pastwisko."</p>
+    </div>
+
+    <h3>"Sprawa bez dowodów." – Fragment rozmowy z emerytowanym policjantem.</h3>
+    <p>Anonimowo porozmawiałem z funkcjonariuszem, który jako nowicjusz brał udział w poszukiwaniach Zosi K. na początku lat 2000.</p>
+    <div class="interview-quote" style="border-color: #6b7280; background: rgba(107, 114, 128, 0.05);">
+        <p>"To była najdziwniejsza sprawa w mojej karierze. Szukaliśmy tej dziewczynki tygodniami. Psy traciły trop pod samym płotem sierocińca, jakby rozpłynęła się w powietrzu. Przesłuchiwaliśmy inne dzieciaki. Była ich czwórka, trzymały się razem. Milczały jak grób, ale w ich oczach było coś więcej niż strach. To była... wiedza. Jakby brały udział w czymś, o czym dorośli nie mogli się dowiedzieć. Dyrektorka, Maria S., kręciła, zbywała nas, mówiła, że Zosia była 'trudnym dzieckiem' ze skłonnościami do ucieczek. Nigdy jej nie uwierzyłem. Czuliśmy, że odpowiedź jest tuż pod naszym nosem, w tym przeklętym budynku, ale nie mieliśmy żadnych dowodów. Nic. Tylko ta cholerna, czerwona wstążka na drzewie."</p>
+    </div>
+
+    <div class="comments-section">
+        <h4>Komentarze do wpisu:</h4>
+        <div class="comment">
+            <p><span class="comment-author">Czytelniczka_88</span> <span class="comment-date">- 21 kwietnia 2022</span></p>
+            <p>'Pastwisko'... to słowo mrozi krew w żyłach. Ten człowiek wie więcej, niż powiedział. To brzmi, jakby te dzieci były hodowane dla... czegoś.</p>
+        </div>
+    </div>
+
+    <div class="separator">◆ ◆ ◆</div>
+
+    <h2>Akta Spraw: Zaginięcie Zosi K. i Inni</h2>
+    <p class="post-date"><em>Opublikowano: 9 września 2024</em></p>
+    <p>Zaginięcie Zosi było najgłośniejsze, ale nie pierwsze. To tylko kolejny rozdział w długiej, krwawej kronice tego miejsca.</p>
+    <div class="archive-entry">
+      <h3>Sprawa braci Rojek (1962)</h3>
+      <p>Dwaj bracia, Jan (lat 9) i Piotr (lat 7) Rojek, wychowankowie sierocińca, zniknęli podczas zabawy w lesie. Ostatni świadek, inny wychowanek, twierdził, że widział, jak "szli w głąb mgły, trzymając się za ręce, jakby ktoś ich wołał". Ciał nigdy nie odnaleziono. Sprawę zamknięto, uznając ją za nieszczęśliwy wypadek.</p>
+    </div>
+    <div class="archive-entry">
+      <h3>Zaginięcie Zofii K. (2003)</h3>
+      <p>Dwunastoletnia Zofia "Zosia" K. zniknęła bez śladu pod koniec lipca. Według artykułu z lokalnej gazety, w akcji brały udział psy tropiące, jednak trop urywał się tuż przy ogrodzeniu placówki. Jedynym śladem była czerwona wstążka znaleziona na gałęzi. Sprawa pozostaje nierozwiązana. Zosia była opisywana jako dziecko "inne", obdarzone dziwną intuicją. Może to właśnie ta "inność" przyciągnęła uwagę lasu?</p>
+    </div>
+    <div class="archive-entry">
+      <h3>Przypadek Ewy Malec (1995)</h3>
+      <p>Szesnastoletnia uciekinierka z domu była widziana po raz ostatni na przystanku autobusowym na skraju Cichego Wzgórza. Jej pamiętnik, znaleziony miesiąc później w lesie, zawierał dziesiątki niepokojących rysunków wysokiej, chudej postaci bez twarzy. Ostatni wpis brzmiał: "On nie ma twarzy, ale widzi wszystko. Czeka na mnie na polanie."</p>
+    </div>
+   
+    <div class="comments-section">
+        <h4>Komentarze do wpisu:</h4>
+        <div class="comment">
+            <p><span class="comment-author">Analityk</span> <span class="comment-date">- 11 września 2024</span></p>
+            <p>Rysunki postaci bez twarzy... to motyw, który pojawia się w wielu mrocznych mitologiach. Czy to możliwe, że ona coś widziała, jakąś lokalną wariację tej legendy?</p>
+        </div>
+    </div>
+
+    <div class="separator">◆ ◆ ◆</div>
+
+    <h2>Najnowszy Wpis: Mężczyzna z aparatem</h2>
+    <p class="post-date"><em>Opublikowano: 13 listopada 2025</em></p>
+    <p>Po latach względnego spokoju, Ciche Wzgórze znów zaczyna szeptać. Otrzymałem kilka niepokojących sygnałów o tajemniczej postaci widywanej w ruinach sierocińca i na leśnych ścieżkach. Opis jest zawsze ten sam: wysoki mężczyzna w długim, ciemnym płaszczu, noszący stary, analogowy aparat fotograficzny. Podobno nie fotografuje krajobrazów, lecz "puste miejsca" – jakby próbował uchwycić coś, czego my nie widzimy. Jego obecność zbiega się z doniesieniami o gęstszej niż zwykle mgle i dziwnych dźwiękach dobiegających nocą z lasu.</p>
+    <div class="gallery">
+        <img src="sierociniec.png" alt="Zniszczony budynek sierocińca we mgle.">
+    <a href="wspomnienie.html" target="_blank">
+    <img src="okno.png" alt="Zbliżenie na okno z zabitymi deskami." id="memory-trigger">
+</a>
+        <img src="wstazka.png" alt="Czerwona wstążka wisząca na gałęzi w lesie.">
+    </div>
+
+    <div class="comments-section" style="margin-top: 40px; background: rgba(0,0,0,0.1); padding: 20px;">
+        <h4>Komentarze (3)</h4>
+        <div class="comment">
+            <p><span class="comment-author">Tropiciel82</span> <span class="comment-date">- 15 listopada 2025</span></p>
+            <p>Też widziałem tego gościa z aparatem. Kręcił się koło starej kopalni. Kiedy próbowałem podejść, zniknął we mgle. Miał dziwnie pustą twarz, jakby nosił maskę. To miejsce jest przeklęte.</p>
+        </div>
+        <div class="comment">
+            <p><span class="comment-author">Anna</span> <span class="comment-date">- 16 listopada 2025</span></p>
+            <p>Moja babcia opowiadała mi o tych zniknięciach. Mówiła, że las upomina się o swoje i że nigdy nie wolno zabierać z niego pamiątek. Mówiła też o Marii S., że była "zbyt dobra, by być prawdziwą". Nie ufała jej.</p>
+        </div>
+        <div class="comment">
+            <p><span class="comment-author">Sara_K</span> <span class="comment-date">- 19 listopada 2025</span></p>
+            <p>Ta mgła... Znowu jest taka gęsta. Czuję, jakby mnie wołała. Czy ktoś jeszcze to czuje? To nie jest zwykła pogoda. Coś się zbliża. Dostaliśmy list...</p>
+            <div class="author-reply">
+                <p><span class="comment-author">Jakub Gralewski (Autor)</span></p>
+                <p>Saro, jeśli to czytasz, proszę, uważaj na siebie. Wiele osób, które czuły to "wołanie", wchodziło do lasu i już nie wracało. "List"? Jeśli masz jakiekolwiek informacje, skontaktuj się ze mną bezpośrednio przez e-mail. Nie jesteś sama w swoich odczuciach.</p>
+            </div>
+        </div>
+    </div>
+  </article>
+
+  <footer id="footer-date">Strona ostatnio aktualizowana...</footer>
+</div>
+
+<script>
+    // Skrypt do dynamicznej aktualizacji daty w stopce
+    const footer = document.getElementById('footer-date');
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    footer.textContent = `Strona ostatnio aktualizowana: ${day}.${month}.${year}`;
+</script>
+
+<script>
+  const returnButton = document.getElementById('returnBtn');
+  if (returnButton) {
+    returnButton.addEventListener('click', () => {
+      // Ta komenda cofa do poprzedniej strony w historii, czyli do ekranu telefonu
+      window.history.back();
+    });
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fragment Pamięci: Pierwsze Wejście</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #ccc;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        #game-container {
+            width: 90%;
+            max-width: 650px;
+        }
+
+        #story-text {
+            font-size: 1.4em;
+            line-height: 1.7;
+            min-height: 200px;
+            white-space: pre-wrap;
+            opacity: 0;
+            animation: fadeIn 3s forwards;
+            margin-bottom: 20px;
+        }
+
+        #choices-container button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 15px;
+            background: transparent;
+            border: 1px solid #555;
+            color: #ccc;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1em;
+            cursor: pointer;
+            opacity: 0;
+            animation: fadeIn 2s 1s forwards;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #choices-container button:hover {
+            background-color: #ccc;
+            color: #000;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="story-text"></div>
+        <div id="choices-container"></div>
+    </div>
+
+    <audio id="sfx-player"></audio>
+
+    <script>
+        const storyTextElement = document.getElementById('story-text');
+        const choicesContainerElement = document.getElementById('choices-container');
+        const sfxPlayer = document.getElementById('sfx-player');
+
+        // NOWA FUNKCJA DO ZAMYKANIA OKNA
+        function endMemory() {
+            // Dodaje komunikat i ustawia opóźnienie przed zamknięciem
+            setTimeout(() => {
+                storyTextElement.innerText += "\n\n[ WSPOMNIENIE ZNIKA... ]";
+            }, 1500);
+
+            setTimeout(() => {
+                window.close();
+            }, 5000); // Zamknij okno po 5 sekundach
+        }
+
+        function playSound(soundFile) {
+            if (!soundFile) return;
+            // sfxPlayer.src = `sounds/${soundFile}`;
+            // sfxPlayer.play();
+        }
+
+        function showStoryNode(nodeId) {
+            const storyNode = storyNodes.find(node => node.id === nodeId);
+
+            storyTextElement.style.animation = 'none';
+            choicesContainerElement.innerHTML = '';
+            void storyTextElement.offsetWidth;
+            storyTextElement.style.animation = 'fadeIn 3s forwards';
+            
+            storyTextElement.innerText = storyNode.text;
+            
+            playSound(storyNode.sfx);
+
+            if (storyNode.choices) {
+                storyNode.choices.forEach(choice => {
+                    const button = document.createElement('button');
+                    button.innerText = choice.text;
+                    button.addEventListener('click', () => selectChoice(choice));
+                    choicesContainerElement.appendChild(button);
+                });
+            }
+
+            // MODYFIKACJA: Sprawdź, czy to węzeł końcowy
+            if (storyNode.isEnd) {
+                endMemory();
+            }
+        }
+
+        function selectChoice(choice) {
+            showStoryNode(choice.next);
+        }
+
+        // ZAKTUALIZOWANA FABUŁA Z DODANĄ FLAGĄ "isEnd"
+        const storyNodes = [
+            {
+                id: 'start',
+                text: "Październik, 2014.\nStoję przed bramą sierocińca w Cichym Wzgórzu. Mgła jest tak gęsta, że ledwo widzę zarys dachu. W powietrzu unosi się zapach wilgoci i zgnilizny.\nAparat fotograficzny ciąży mi na szyi. Czas znaleźć dowody na to, co czuję od lat. Że to miejsce nie jest martwe.",
+                choices: [
+                    { text: "Wejdź przez uchylone drzwi główne", next: 'main_hall' },
+                    { text: "Spróbuj znaleźć inne wejście z tyłu", next: 'around_back' }
+                ]
+            },
+            {
+                id: 'around_back',
+                text: "Omijasz główną bramę i idziesz wzdłuż zardzewiałego płotu. Z tyłu budynku, pośród zdziczałych krzewów, znajdujesz okno do kuchni.\nJedna z desek, którymi je zabito, jest obluzowana.",
+                choices: [
+                    { text: "Spróbuj wyważyć deskę", next: 'pry_board' },
+                    { text: "Zrezygnuj i wróć do głównego wejścia", next: 'start' }
+                ]
+            },
+            {
+                id: 'pry_board',
+                text: "Po krótkiej walce zardzewiałe gwoździe ustępują z jękiem. Deska odpada, odsłaniając czarną otchłań.\nWciskasz się przez wąski otwór i lądujesz na podłodze starej kuchni.",
+                choices: [
+                    { text: "Rozejrzyj się po kuchni", next: 'kitchen' }
+                ]
+            },
+            {
+                id: 'kitchen',
+                text: "W kuchni panuje odrażający zaduch. Na stołach wciąż stoją talerze z zaschniętym, spleśniałym jedzeniem. Ciszę przerywa tylko ciche brzęczenie much.\nJedne drzwi prowadzą w głąb budynku.",
+                choices: [
+                    { text: "Idź dalej", next: 'main_corridor' }
+                ]
+            },
+            {
+                id: 'main_hall',
+                text: "Wchodzisz do głównej sali. Powietrze jest ciężkie od kurzu. W snopach światła latarki wirują miliardy drobinek.\nNa ścianach wiszą zniszczone zdjęcia dzieci, których uśmiechy wyglądają jak upiorne grymasy. Na podłodze leży rozdarta lalka z jednym okiem.",
+                choices: [
+                    { text: "Zbadaj zdjęcia na ścianie", next: 'examine_photos' },
+                    { text: "Idź w głąb korytarza", next: 'main_corridor' }
+                ]
+            },
+            {
+                id: 'examine_photos',
+                text: "Podchodzisz do ściany. Twoja latarka omiata twarze dawno zapomnianych dzieci. Wiele z nich pamiętasz z policyjnych akt. Twoją uwagę przykuwa jedno zdjęcie grupowe.\nW miejscu, gdzie powinno stać jeszcze jedno dziecko, jest tylko pusta, ciemna plama, jakby postać została wypalona z kliszy.",
+                choices: [
+                    { text: "Cofnij się do sali", next: 'main_hall' }
+                ]
+            },
+            {
+                id: 'main_corridor',
+                text: "Jesteś w długim korytarzu. Z sufitu kapie woda, tworząc powolny, miarowy rytm.\nPo lewej stronie są drzwi do sypialni. Po prawej - do gabinetu dyrektorki. Na samym końcu korytarza majaczą masywne, metalowe drzwi.",
+                choices: [
+                    { text: "Wejdź do sypialni", next: 'bedrooms' },
+                    { text: "Sprawdź gabinet dyrektorki", next: 'office' },
+                    { text: "Podejdź do metalowych drzwi", next: 'cellar_door' }
+                ]
+            },
+            {
+                id: 'bedrooms',
+                text: "Otwierasz drzwi do sypialni. Szereg małych, zardzewiałych łóżek stoi w równym rzędzie. Smutek tego miejsca jest niemal namacalny.\nNa jednym z materacy leży kartka z zeszytu. To dziecięcy rysunek: kilka postaci i jedna, znacznie wyższa, chuda, bez twarzy.",
+                choices: [
+                    { text: "Zrób zdjęcie rysunku aparatem", next: 'take_photo' },
+                    { text: "Wyjdź z powrotem na korytarz", next: 'main_corridor' }
+                ]
+            },
+            {
+                id: 'take_photo',
+                text: "Unosisz aparat. Celujesz. Błysk flesza na ułamek sekundy rozświetla cały pokój, ukazując każdy szczegół w ostrej bieli.\nI w tym błysku, w kącie pokoju, tuż obok szafy, widzisz stojący, wysoki cień. Flesz gaśnie. Cienia już nie ma.\nSerce wali ci w piersi. Musisz stąd wyjść. Natychmiast.",
+                sfx: 'flash_scream.mp3',
+                choices: [
+                    { text: "UCIEKAJ!", next: 'main_corridor_scared' }
+                ]
+            },
+             {
+                id: 'main_corridor_scared',
+                text: "Wypadasz z sypialni na korytarz, zamykając za sobą drzwi. Dysząc ciężko, opierasz się o ścianę.\nTo nie był pył. To nie była gra świateł. Ktoś - lub coś - było w tym pokoju.",
+                choices: [
+                    { text: "Uspokój się i idź do gabinetu", next: 'office' },
+                    { text: "Mam dość. Muszę się stąd wydostać.", next: 'ending_flee' }
+                ]
+            },
+            {
+                id: 'office',
+                text: "Wchodzisz do gabinetu dyrektorki. Panuje tu zaskakujący porządek, wszystko pokryte jest grubą warstwą kurzu. Za biurkiem wisi obraz.\nCzujesz na sobie czyjś wzrok, a w powietrzu unosi się słodkawa woń starych perfum. Zdejmujesz obraz - za nim jest sejf. Zamknięty. Nie masz jak go otworzyć.",
+                choices: [
+                    { text: "Wróć na korytarz", next: 'main_corridor' }
+                ]
+            },
+            {
+                id: 'cellar_door',
+                text: "Podchodzisz do metalowych drzwi na końcu korytarza. Emanuje od nich przenikliwy chłód. Całe są pokryte wydrapanymi, paniczными rysunkami dzieci uciekających przed czymś.\nPrzykładasz ucho do zimnego metalu. Z drugiej strony słyszysz ciche, rytmiczne drapanie.",
+                sfx: 'drapanie.mp3',
+                choices: [
+                    { text: "Spróbuj otworzyć drzwi siłą", next: 'try_door' },
+                    { text: "To koniec. Wychodzę stąd.", next: 'ending_flee' }
+                ]
+            },
+            {
+                id: 'try_door',
+                text: "Chwytasz za zardzewiałą klamkę i ciągniesz z całej siły. Drzwi nawet nie drgną. Są zamknięte na cztery spusty.\nNagle drapanie po drugiej stronie ustaje. W absolutnej ciszy, tuż przy twoim uchu, zza drzwi dobiega głęboki, gardłowy szept:\n\"Zostaw... nas... samych.\"\n\nLód spływa ci po kręgosłupie. To nie jest duch dziecka. To coś starego. I bardzo, bardzo złego.",
+                choices: [
+                    { text: "Uciekaj. Teraz.", next: 'ending_flee' }
+                ]
+            },
+            {
+                id: 'ending_flee',
+                text: "Wystarczy. Wiesz już za dużo i jednocześnie za mało. Strach pokonuje ciekawość. Odwracasz się i pędzisz przez korytarze, przez główną salę, na zewnątrz, w objęcia mgły.\nNie oglądasz się za siebie. Uciekasz z Cichego Wzgórza, ale wiesz, że kawałek tego miejsca zabierasz ze sobą.\nTo wspomnienie. To drapanie. Ten szept.\nTo był początek twojej obsesji.",
+                isEnd: true // Oznaczenie końca
+            }
+        ];
+
+        // Rozpocznij grę
+        showStoryNode('start');
+    </script>
+</body>
+</html>

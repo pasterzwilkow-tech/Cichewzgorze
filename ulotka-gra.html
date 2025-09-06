@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ulotka - Interakcja</title>
+<style>
+    :root {
+        --bg: #0a0c10;
+        --fg: #e6e6e6;
+        --accent: #c7a26d;
+        --border-color: rgba(255, 255, 255, .15);
+        --glow: rgba(200, 160, 100, 0.7);
+        --red-glow: rgba(255, 50, 50, 0.6);
+    }
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: var(--bg);
+        color: var(--fg);
+        font-family: 'Courier New', Courier, monospace;
+    }
+    .container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: filter 0.5s ease;
+    }
+    #flyer-image {
+        max-width: 90%;
+        max-height: 75%;
+        object-fit: contain;
+        border: 2px solid var(--border-color);
+        transition: box-shadow 0.5s ease;
+    }
+    .hotspot {
+        position: absolute;
+        cursor: pointer;
+        border-radius: 50%;
+        transition: box-shadow 0.3s ease, background-color 0.3s ease;
+    }
+    .hotspot:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 15px 5px var(--glow);
+    }
+    #hs-eye { top: 30%; left: 50%; width: 8%; height: 10%; transform: translate(-50%, -50%); }
+    #hs-title { top: 12%; left: 50%; width: 40%; height: 12%; transform: translate(-50%, -50%); border-radius: 10px; }
+    #hs-figure { top: 65%; left: 50%; width: 18%; height: 35%; transform: translate(-50%, -50%); }
+
+    #message-box {
+        position: absolute;
+        bottom: 12%;
+        width: 80%;
+        padding: 15px;
+        background-color: rgba(0, 0, 0, 0.8);
+        border-top: 2px solid var(--accent);
+        text-align: center;
+        font-size: 1.1em;
+        line-height: 1.5;
+        min-height: 2em;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        pointer-events: none;
+    }
+    #message-box.visible { opacity: 1; }
+
+    #return-button {
+        position: absolute;
+        bottom: 3%;
+        padding: 12px 24px;
+        font-size: 1.1em;
+        font-family: inherit;
+        color: var(--fg);
+        background: #332315;
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        cursor: pointer;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #return-button:hover { background: #4e3520; }
+    #return-button.visible { opacity: 1; visibility: visible; }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+        20%, 40%, 60%, 80% { transform: translateX(3px); }
+    }
+    .shake-effect { animation: shake 0.5s ease-in-out; }
+    
+    .disturbing-effect {
+        filter: saturate(0.5) contrast(1.5);
+    }
+    .disturbing-effect #flyer-image {
+        box-shadow: 0 0 25px 10px var(--red-glow);
+    }
+</style>
+</head>
+<body>
+
+<div class="container" id="container">
+    <img id="flyer-image" src="ulotka.png" alt="Interaktywna ulotka sekty">
+
+    <div class="hotspot" id="hs-eye" title="Oko"></div>
+    <div class="hotspot" id="hs-title" title="Tytuł"></div>
+    <div class="hotspot" id="hs-figure" title="Postać"></div>
+
+    <div id="message-box"></div>
+    <button id="return-button">Oderwij wzrok</button>
+</div>
+
+<script>
+    const container = document.getElementById('container');
+    const messageBox = document.getElementById('message-box');
+    const returnButton = document.getElementById('return-button');
+
+    const story = [
+        // Kliknięcie 1-2: Ogólne frazesy
+        { type: 'eye', msg: "ONO WIDZI WSZYSTKO." },
+        { type: 'title', msg: "CZAS SIĘ SKOŃCZYŁ." },
+        // Kliknięcie 3-4: Staje się bardziej osobiste
+        { type: 'figure', msg: "POSŁANIEC ZOSTAWIA ZNAKI." },
+        { type: 'eye', msg: "WIDZIELIŚMY CIĘ TEJ NOCY NA ULICY." },
+        // Kliknięcie 5-6: Bezpośrednie zwroty
+        { type: 'title', msg: "KONIEC JEST TWOIM NOWYM POCZĄTKIEM." },
+        { type: 'figure', msg: "ON WIE, ŻE SZUKASZ ODPOWIEDZI." },
+        // Kliknięcie 7: Finałowa wiadomość
+        { type: 'eye', msg: "Twoje życie to iluzja. Sny to jedyna prawda.<br>Przestań uciekać. Jesteś jednym z nas." }
+    ];
+
+    let clickCount = 0;
+
+    function showMessage() {
+        if (clickCount >= story.length) return;
+
+        const currentMessage = story[clickCount];
+        messageBox.innerHTML = currentMessage.msg;
+        messageBox.classList.add('visible');
+
+        container.classList.add('shake-effect');
+        setTimeout(() => container.classList.remove('shake-effect'), 500);
+
+        clickCount++;
+
+        // Po 4 kliknięciach atmosfera gęstnieje
+        if (clickCount === 4) {
+            container.classList.add('disturbing-effect');
+        }
+
+        // Kiedy historia się kończy, pokaż przycisk powrotu
+        if (clickCount >= story.length) {
+            setTimeout(() => {
+                returnButton.classList.add('visible');
+            }, 1000);
+        }
+    }
+    
+    // Zamiast osobnych eventów, każdy hotspot wywołuje tę samą funkcję
+    document.getElementById('hs-eye').addEventListener('click', showMessage);
+    document.getElementById('hs-title').addEventListener('click', showMessage);
+    document.getElementById('hs-figure').addEventListener('click', showMessage);
+
+    // Przycisk powrotu wysyła wiadomość do głównego okna, żeby się zamknęło
+    returnButton.addEventListener('click', () => {
+        // 'closeUlotkaMinigame' to wiadomość, na którą nasłuchuje car.html
+        // '*' oznacza, że nie ma znaczenia domena (dla plików lokalnych to najprostsze rozwiązanie)
+        window.parent.postMessage('closeUlotkaMinigame', '*');
+    });
+</script>
+
+</body>
+</html>

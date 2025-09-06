@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Telefon</title>
+<style>
+  :root { 
+    --phone-bg: #1a1c20; --screen-bg: #000; --fg: #e5e7eb; --muted: #9ca3af;
+    --accent: #3b82f6; --red: #ef4444; --header: #33363d; --green: #22c55e;
+  }
+  html, body { height: 100%; margin: 0; background: transparent; }
+  body { display: grid; place-items: center; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  .hidden { display: none !important; }
+
+  /* Telefon */
+  #phone-body {
+    width: 100%; height: 100%; max-width: 360px; max-height: 720px;
+    background: var(--phone-bg); border-radius: 40px; border: 2px solid rgba(255,255,255,0.1);
+    box-shadow: 0 0 80px rgba(0,0,0,0.6); padding: 15px;
+  }
+  #phone-screen {
+    width: 100%; height: 100%; background: var(--screen-bg); border-radius: 30px;
+    position: relative; overflow: hidden; color: var(--fg);
+  }
+
+  /* Ekrany */
+  .screen { position: absolute; inset: 0; background: var(--screen-bg);
+    transition: transform .3s ease-in-out; display: flex; flex-direction: column;
+    transform: translateX(100%); }
+  #home-screen { transform: translateX(0); }
+  .screen.active { transform: translateX(0); }
+
+  /* Ikony */
+  #icon-container { padding: 20px; display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 20px; align-content: start; }
+  .app-icon { background: #2d3036; border: none; border-radius: 20px; color: var(--fg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 10px; font-size: 12px; aspect-ratio: 1/1; cursor: pointer; transition: transform 0.2s ease; }
+  .app-icon:hover { transform: scale(1.05); }
+  .app-icon .icon { font-size: 32px; margin-bottom: 5px; }
+
+  /* Nagłówki i treść */
+  .app-header { background: var(--header); padding: 12px; text-align: center; font-weight: bold; flex-shrink: 0; }
+  .app-content { flex-grow: 1; padding: 15px; overflow-y: auto; }
+  .app-content::-webkit-scrollbar{ width: 4px; }
+  .app-content::-webkit-scrollbar-thumb{ background: #555; border-radius: 10px; }
+  .back-button {
+    background: var(--accent); color: white; border: none; padding: 8px 12px;
+    border-radius: 8px; cursor: pointer; margin-bottom: 15px;
+  }
+
+  /* Kontakty */
+  .contact-entry { padding: 12px; border-bottom: 1px solid var(--header); cursor: pointer; }
+  .contact-entry:hover { background: #2d3036; }
+  .contact-entry b { font-size: 1.1em; }
+  .contact-entry .muted { font-size: 0.9em; }
+
+  /* Wiadomości – lista wątków */
+  .thread-entry { padding: 12px; border-bottom: 1px solid var(--header); cursor: pointer; display:flex; align-items:center; gap:10px; }
+  .thread-entry:hover { background: #2d3036; }
+  .thread-avatar { width:36px; height:36px; border-radius:50%; background:#4a4d55; display:grid; place-items:center; font-weight:700; }
+  .thread-meta { display:flex; flex-direction:column; }
+  .thread-name { font-weight:600; }
+  .thread-last { color: var(--muted); font-size: 0.9em; }
+
+  /* Wiadomości – dymki */
+  .message-row { display:flex; margin-bottom:10px; }
+  .message-bubble {
+    padding: 10px 12px; border-radius: 15px; max-width: 85%; background: var(--header);
+    line-height: 1.4; word-wrap: anywhere;
+  }
+  .message-bubble.mine { background: var(--accent); color: #fff; margin-left: auto; }
+  .message-bubble.their { background: #2d3036; color: var(--fg); }
+  .date-divider { text-align:center; color: var(--muted); font-size: 0.85em; margin: 16px 0 8px; }
+
+  /* CALL-APP (oryginalny moduł dzwonienia) */
+  #call-app { background-color: #111; }
+  #call-status { text-align: center; padding-top: 60px; }
+  #caller-name { font-size: 2em; margin: 15px 0 5px; }
+  #call-timer { color: var(--muted); }
+  #dialogue-display { padding: 0 20px; color: var(--muted); min-height: 60px; }
+  #dialogue-options { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .dialogue-btn { width: 100%; padding: 15px; font-size: 1.1em; background: var(--header); border: 1px solid #555; color: var(--fg); border-radius: 10px; cursor: pointer; text-align: left; }
+  .dialogue-btn:hover { background: #4a4d55; }
+  .dialogue-btn.end-call { background: var(--red); text-align: center; font-weight: bold; }
+.message-image{
+  display:block;
+  width:100%;
+  max-width:240px;
+  border-radius:10px;
+  margin-top:6px;
+  border:1px solid #444;
+  image-rendering: pixelated;
+}
+</style>
+</head>
+<body>
+
+<div id="phone-body">
+  <div id="phone-screen">
+    <!-- HOME -->
+    <div id="home-screen" class="screen">
+      <div id="icon-container">
+        <button class="app-icon" data-app="contacts"><span class="icon">👤</span> Kontakty</button>
+        <button class="app-icon" data-app="messages"><span class="icon">💬</span> Wiadomości</button>
+        <button class="app-icon" id="browser-icon"><span class="icon">🌐</span> Ciche Wzgórze</button>
+      </div>
+    </div>
+
+    <!-- KONTAKTY (kliknięcie „Sara” uruchamia dzwonienie) -->
+    <div id="contacts-app" class="screen">
+      <div class="app-header">Kontakty</div>
+      <div class="app-content">
+        <button class="back-button" data-back="home">Powrót</button>
+        <div class="contact-entry" data-contact="sara"><b>Sara</b><br><span class="muted">Ostatni raz online: 5 minut temu</span></div>
+        <div class="contact-entry" data-contact="monika"><b>Monika</b><br><span class="muted">SPAM!!!</span></div>
+        <div class="contact-entry" data-contact="karolina"><b>Karolina</b><br><span class="muted">...</span></div>
+        <div class="contact-entry" data-contact="praca"><b>Praca</b><br><span class="muted">MAGAZYN</span></div>
+      </div>
+    </div>
+
+    <!-- WIADOMOŚCI (lista wątków) -->
+    <div id="messages-app" class="screen">
+      <div class="app-header">Wiadomości</div>
+      <div class="app-content" id="threads-list">
+        <button class="back-button" data-back="home">Powrót</button>
+
+        <!-- Wątek: Sara -->
+        <div class="thread-entry" data-thread="sara">
+          <div class="thread-avatar">S</div>
+          <div class="thread-meta">
+            <span class="thread-name">Sara</span>
+            <span class="thread-last">„Wzajemnie, bracie.”</span>
+          </div>
+        </div>
+<div class="thread-entry" data-thread="karolina">
+  <div class="thread-avatar">K</div>
+  <div class="thread-meta">
+    <span class="thread-name">Karolina</span>
+    <span class="thread-last">„Nie odpisujesz = nie żyjesz?”</span>
+  </div>
+</div>
+<div class="thread-entry" data-thread="szef">
+  <div class="thread-avatar">Sz</div>
+  <div class="thread-meta">
+    <span class="thread-name">Szef</span>
+    <span class="thread-last">„Nie filozofuj. Palety z tyłu czekają.”</span>
+  </div>
+</div>
+        <!-- Możesz dodać inne wątki tu… -->
+        <div class="thread-entry" data-thread="monika">
+          <div class="thread-avatar">M</div>
+          <div class="thread-meta">
+            <span class="thread-name">Monika</span>
+            <span class="thread-last">„Daj znać jutro.”</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- WIADOMOŚCI → Rozmowa z Sarą (kilka miesięcy) -->
+      <div class="app-content hidden" id="thread-sara">
+        <div class="app-header">
+          <button class="back-button" data-back="list">←</button> Sara
+        </div>
+<div style="padding:12px">
+  <!-- Marzec -->
+  <div class="date-divider">Marzec</div>
+  <div class="message-row"><div class="message-bubble their">Hej, żyjesz? Zniknąłeś wczoraj wcześnie.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Padłem po zmianie. Plecy dają znać.</div></div>
+  <div class="message-row"><div class="message-bubble their">Wiem, tylko dawaj znak. Martwię się. Napisz chociaż kropkę, że wszystko ok.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Masz rację. Kropka.</div></div>
+  <div class="message-row"><div class="message-bubble their">Może wpadniesz w weekend? Wiem, że to kilkadziesiąt kilometrów, ale podjadę potem po Ciebie na dworzec.</div></div>
+  <div class="message-row"><div class="message-bubble mine">W ten weekend nie dam rady. Zmiany mi się posypały.</div></div>
+
+  <!-- Kwiecień -->
+  <div class="date-divider">Kwiecień</div>
+  <div class="message-row"><div class="message-bubble their">Jutro planszówki u mnie. Przyjedziesz?</div></div>
+  <div class="message-row"><div class="message-bubble mine">Chcę, ale nie ogarnę dojazdu. Bilet i czas…</div></div>
+  <div class="message-row"><div class="message-bubble their">To przyjadę po Ciebie. Serio.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Nie ma sensu. To kawał drogi.</div></div>
+  <div class="message-row"><div class="message-bubble their">Przynajmniej zjedz coś normalnego i śpij dłużej niż 4h.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Postaram się.</div></div>
+
+  <!-- Maj -->
+  <div class="date-divider">Maj</div>
+  <div class="message-row"><div class="message-bubble their">Wysłałam ci fotę kota spod bloku. Przyjedź, poznasz go „na żywo”.</div></div>
+<div class="message-row">
+  <div class="message-bubble their">
+    <img class="message-image" src="cat_pixel.png" alt="Kot spod bloku – pixelart" loading="lazy">
+  </div>
+</div>
+
+  <div class="message-row"><div class="message-bubble mine">Kocur sztos, ale ja ledwo stoję po rozładunku.</div></div>
+  <div class="message-row"><div class="message-bubble their">Coraz częściej piszesz, że „ledwo stoisz”. To już nie brzmi normalnie.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Przejdzie. Kolano i bark marudzą.</div></div>
+  <div class="message-row"><div class="message-bubble their">Pozwól mi podjechać w sobotę, zawiozę cię do fizjo.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Nie przyjeżdżaj, szkoda Twojej jazdy.</div></div>
+
+  <!-- Czerwiec -->
+  <div class="date-divider">Czerwiec</div>
+  <div class="message-row"><div class="message-bubble their">Upał. Pij wodę. Słowo daję, brzmisz jakbyś odpływał.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Zemdliło mnie po rozładunku. Słabość minie.</div></div>
+  <div class="message-row"><div class="message-bubble their">Nie „minie”. Chcę cię zobaczyć na własne oczy. Pojadę do ciebie po pracy.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Sara, to prawie 50 km. Nie ma opcji.</div></div>
+  <div class="message-row"><div class="message-bubble their">To spotkajmy się w połowie drogi. Choć na godzinę.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Nie dziś. Kręci mi się w głowie.</div></div>
+
+  <!-- Lipiec -->
+  <div class="date-divider">Lipiec</div>
+  <div class="message-row"><div class="message-bubble their">Jak dzień?</div></div>
+  <div class="message-row"><div class="message-bubble mine">Ciężki. Ręce mi drżą po wózku.</div></div>
+  <div class="message-row"><div class="message-bubble their">To przyjadę z kolacją. Po prostu posiedzimy. Proszę.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Nie ma gdzie usiąść, a i tak padnę zaraz.</div></div>
+  <div class="message-row"><div class="message-bubble their">Okej, ale umawiamy się: video wieczorem. Chcę cię zobaczyć.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Nie dam rady. Innym razem.</div></div>
+
+  <!-- Sierpień -->
+  <div class="date-divider">Sierpień</div>
+  <div class="message-row"><div class="message-bubble their">Przyjadę do ciebie w niedzielę.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Nie. Benzyna kosztuje, a ja i tak będę w pracy.</div></div>
+  <div class="message-row"><div class="message-bubble their">To połowa drogi? Stacja przy obwodnicy?</div></div>
+  <div class="message-row"><div class="message-bubble mine">Nie dam rady.</div></div>
+
+  <!-- Wrzesień -->
+  <div class="date-divider">Wrzesień</div>
+  <div class="message-row"><div class="message-bubble their">Dzisiaj u mnie wieczór filmowy. Odwiozę cię później, nie masz wymówki.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Mam skręconą kostkę. Nie będę jechał.</div></div>
+  <div class="message-row"><div class="message-bubble their">To przyjadę z herbatą i opatrunkiem. Nie odmawiaj.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Naprawdę nie. Jutro wcześnie wstaję.</div></div>
+  <div class="message-row"><div class="message-bubble their">Zaczynam się bać. Coraz częściej cię „nie ma”.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Jestem. Nie martw się to tylko zmęczenie.</div></div>
+
+  <!-- Październik -->
+  <div class="date-divider">Październik</div>
+  <div class="message-row"><div class="message-bubble their">Mgła jak mleko. Miej odblask. I proszę: lekarz.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Kaszel mnie męczy. Przejdzie.</div></div>
+  <div class="message-row"><div class="message-bubble their">Nie przejdzie, jeśli nic nie zrobisz. Podjadę jutro, chociaż na 15 minut.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Nie przyjeżdżaj. Naprawdę nic się nie dzieje.</div></div>
+  <div class="message-row"><div class="message-bubble their">Wolę przyjechać niż czytać twoje „nie dam rady”.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Proszę, nie jedź. Odezwę się rano.</div></div>
+
+  <!-- Listopad (początek) -->
+  <div class="date-divider">Listopad (początek)</div>
+  <div class="message-row"><div class="message-bubble their"> Może byś odebrał w końcu? Jak się trzymasz? Zniknąłeś na cały miesiąc. Serio się boję.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Wszystko ok. Przepraszam, nie martw się.</div></div>
+  <div class="message-row"><div class="message-bubble their">Nie ma żadnego „ok”, jeśli dalej będziesz sam. Spotkajmy się choć na 30 minut.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Proszę nie... Naprawdę wszystko jest dobrze.</div></div>
+  <div class="message-row"><div class="message-bubble their">To ja przyjadę.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Nie przyjeżdżaj. Proszę.</div></div>
+
+  <!-- Listopad (tuż przed weekendem) -->
+  <div class="date-divider">Listopad (tuż przed weekendem)</div>
+  <div class="message-row"><div class="message-bubble their">Zjadłeś coś porządnego? Słabniesz w oczach, nawet przez wiadomości to czuję.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Zjadłem.</div></div>
+  <div class="message-row"><div class="message-bubble their">W niedziele jadę do ciebie, kropka.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Nie rób tego. Odezwę się jutro.</div></div>
+  <div class="message-row"><div class="message-bubble their">W takim razie: dwie wiadomości dziennie — rano „jestem”, wieczorem „żyje”. Jak pominiesz chociaż jedną, wsiadam w auto.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Rano jestem. Wieczorem żyję.</div></div>
+  <div class="message-row"><div class="message-bubble their">Dobrze. Ale wiedz, że serio rozważam tę drogę. Te kilkadziesiąt kilometrów to nie powód, żebym cię traciła z oczu.</div></div>
+  <div class="message-row"><div class="message-bubble mine">Rozumiem. Postaram się nie znikać.</div></div>
+</div>
+</div>
+<!-- WIADOMOŚCI → Rozmowa z Szefem (kilka miesięcy) -->
+<div class="app-content hidden" id="thread-szef">
+  <div class="app-header">
+    <button class="back-button" data-back="list">←</button> Szef
+  </div>
+  <div style="padding:12px">
+
+    <!-- Marzec -->
+    <div class="date-divider">Marzec</div>
+    <div class="message-row"><div class="message-bubble their">Gdzie jesteś? Zmiana zaczęła się 10 minut temu.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Jestem pod bramą, kolejka do wejścia.</div></div>
+    <div class="message-row"><div class="message-bubble their">Kolejka to nie wymówka. Jak się chce, przychodzi się wcześniej.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Otworzyli dopiero co, wchodzę.</div></div>
+    <div class="message-row"><div class="message-bubble their">Nie filozofuj. Palety z tyłu czekają.</div></div>
+
+    <!-- Kwiecień -->
+    <div class="date-divider">Kwiecień</div>
+    <div class="message-row"><div class="message-bubble their">Zostań dziś dłużej, mamy „czasówkę”.</div></div>
+    <div class="message-row"><div class="message-bubble mine">To będzie nadgodzina?</div></div>
+    <div class="message-row"><div class="message-bubble their">Nadgodzina to słowo dla ludzi na etacie. Ty jesteś „elastyczny”.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Mam już plany.</div></div>
+    <div class="message-row"><div class="message-bubble their">Plany to ja ci układam w grafiku. Do 22:00.</div></div>
+
+    <!-- Maj -->
+    <div class="date-divider">Maj</div>
+    <div class="message-row"><div class="message-bubble their">Kto zostawił rozjechane europalety przy rampie?</div></div>
+    <div class="message-row"><div class="message-bubble mine">Ja, wózek szwankował, zgłosiłem Mirkowi.</div></div>
+    <div class="message-row"><div class="message-bubble their">Mirka mnie to nie obchodzi. Jak sprzęt nie działa, bierzesz drugi i robisz.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Drugi był zajęty.</div></div>
+    <div class="message-row"><div class="message-bubble their">Zawsze masz wymówkę. Następnym razem licz na „lżejszy” portfel.</div></div>
+
+    <!-- Czerwiec -->
+    <div class="date-divider">Czerwiec</div>
+    <div class="message-row"><div class="message-bubble their">Upalnie? To pij mniej, pracuj więcej.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Źle się poczułem po rozładunku, poszedłem po wodę.</div></div>
+    <div class="message-row"><div class="message-bubble their">Nie płacę za spacerki do kranu.</div></div>
+    <div class="message-row"><div class="message-bubble mine">To kwestia BHP.</div></div>
+    <div class="message-row"><div class="message-bubble their">BHP to nie kawiarnia. Wróć do skanera.</div></div>
+
+    <!-- Lipiec -->
+    <div class="date-divider">Lipiec</div>
+    <div class="message-row"><div class="message-bubble their">Weekend. Wpadasz na nadgodziny.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Mam wolne wpisane.</div></div>
+    <div class="message-row"><div class="message-bubble their">Wolne to stan umysłu. Potrzebuję ludzi, nie filozofów.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Mogę przyjść w niedzielę rano, nie cały dzień.</div></div>
+    <div class="message-row"><div class="message-bubble their">Niedziela to ja odpoczywam. Przyjdź w sobotę. I nie dyskutuj.</div></div>
+
+    <!-- Sierpień -->
+    <div class="date-divider">Sierpień</div>
+    <div class="message-row"><div class="message-bubble their">Dostałem info, że znowu „zawisłeś” przy pakowaniu.</div></div>
+    <div class="message-row"><div class="message-bubble mine">System się zaciął, czekałem na potwierdzenie.</div></div>
+    <div class="message-row"><div class="message-bubble their">Czekają mięczaki. Ty masz robić.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Bez potwierdzenia poszłyby złe etykiety.</div></div>
+    <div class="message-row"><div class="message-bubble their">To twoja wymówka, jak coś wróci. Ja nie słucham bajek.</div></div>
+
+    <!-- Wrzesień -->
+    <div class="date-divider">Wrzesień</div>
+    <div class="message-row"><div class="message-bubble their">Klient chce szybciej. Zrób to „jakkolwiek”, ma wyglądać.</div></div>
+    <div class="message-row"><div class="message-bubble mine">„Jakkolwiek” wróci reklamacją.</div></div>
+    <div class="message-row"><div class="message-bubble their">Jak wróci, to pogadamy. Na razie ma wyjechać.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Zrobię porządnie, potrzebuję 20 minut.</div></div>
+    <div class="message-row"><div class="message-bubble their">Masz 10. I uśmiech, bo psujesz atmosferę.</div></div>
+
+    <!-- Październik -->
+    <div class="date-divider">Październik</div>
+    <div class="message-row"><div class="message-bubble their">Nie podoba mi się twoja mina.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Jestem po nocy, robię swoje.</div></div>
+    <div class="message-row"><div class="message-bubble their">Jak chcesz spać, to w domu.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Dlatego proszę o wcześniejszą zmianę.</div></div>
+    <div class="message-row"><div class="message-bubble their">A ja proszę, żebyś przestał marudzić. Zmiana zostaje.</div></div>
+
+    <!-- Listopad (początek) -->
+    <div class="date-divider">Listopad (początek)</div>
+    <div class="message-row"><div class="message-bubble their">Spóźnienie 6 minut.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Autobus się spóźnił, informowałem bramę.</div></div>
+
+      </div>
+    </div>
+<div class="app-content hidden" id="thread-karolina">
+        <div class="app-header">
+          <button class="back-button" data-back="list">←</button> Karolina
+        </div>
+        <div style="padding:12px">
+            <div class="date-divider">Marzec</div>
+            <div class="message-row"><div class="message-bubble their">Cisza w eterze. Mam nadzieję, że chociaż rachunki płacisz.</div></div>
+            <div class="message-row"><div class="message-bubble mine">Daję radę.</div></div>
+            <div class="message-row"><div class="message-bubble their">"Dajesz radę" to nie odpowiedź. To stagnacja. Monika mówiła, że znowu tkwisz w martwym punkcie.</div></div>
+            <div class="message-row"><div class="message-bubble mine">Po prostu jestem zmęczony. Praca. Plecy dają znać.</div></div>
+            <div class="message-row"><div class="message-bubble their">Taa, "praca". Ja właśnie kończę nowy cykl obrazów. Nazywa się "Anatomia rozpadu". Powinieneś zobaczyć. Może byś wreszcie poczuł jakąś prawdziwą emocję.</div></div>
+
+            <div class="date-divider">Kwiecień</div>
+            <div class="message-row"><div class="message-bubble their">Sara się o ciebie martwi. Odbierz od niej czasem.</div></div>
+            <div class="message-row"><div class="message-bubble mine">Odbieram.</div></div>
+            <div class="message-row"><div class="message-bubble their">Jasne. Raz na tydzień to nie "odbieranie". Dorośnij.</div></div>
+            <div class="message-row"><div class="message-bubble their">Wernisaż mam w przyszłym miesiącu. Bądź tam. To nie prośba.</div></div>
+
+            <div class="date-divider">Maj</div>
+            <div class="message-row"><div class="message-bubble their">Wysłałam ci zaproszenie na wernisaż. Nawet nie odpisałeś.</div></div>
+            <div class="message-row"><div class="message-bubble mine">Przepraszam, miałem ciężki tydzień. Ledwo stoję.</div></div>
+            <div class="message-row"><div class="message-bubble their">Każdy ma ciężki tydzień, Sławek. Sztuka wymaga poświęceń. A ty co poświęcasz? Czas na sen?</div></div>
+            <div class="message-row"><div class="message-bubble mine">Coś w tym stylu.</div></div>
+            <div class="message-row"><div class="message-bubble their">Słuchaj, jeden z moich obrazów sprzedał się za niezłą sumę. Przedstawiał twarz wyłaniającą się z mgły. Inspirujące, prawda?</div></div>
+            
+            <div class="date-divider">Czerwiec</div>
+            <div class="message-row"><div class="message-bubble their">Monika ma nowy projekt. Mówiła ci? Pewnie nie, bo byś to wyśmiał.</div></div>
+            <div class="message-row"><div class="message-bubble mine">Mówiła.</div></div>
+            <div class="message-row"><div class="message-bubble their">I co? Dalej wolisz dźwigać palety za minimalną?</div></div>
+            <div class="message-row"><div class="message-bubble mine">Wolę to, niż naciągać ludzi.</div></div>
+            <div class="message-row"><div class="message-bubble their">To się nazywa biznes, Sławek. Ale ty nigdy nie miałeś do tego głowy. Zawsze tylko to swoje cierpienie. Nudne.</div></div>
+
+            <div class="date-divider">Sierpień</div>
+            <div class="message-row"><div class="message-bubble their">Wiesz, że zbliża się rocznica, prawda?</div></div>
+            <div class="message-row"><div class="message-bubble mine">Wiem.</div></div>
+            <div class="message-row"><div class="message-bubble their">I nic? Będziesz tak siedział w tej swojej norze?</div></div>
+            <div class="message-row"><div class="message-bubble mine">A co mam robić?</div></div>
+            <div class="message-row"><div class="message-bubble their">Żyć. Tak jak my. Ale ty zawsze wolałeś użalać się nad sobą. To w sumie ciekawe studium postaci. Może cię kiedyś namaluję.</div></div>
+
+            <div class="date-divider">Październik</div>
+            <div class="message-row"><div class="message-bubble their">Sara znowu do mnie dzwoniła. Mówi, że znikasz.</div></div>
+            <div class="message-row"><div class="message-bubble mine">Przesadza. Kaszel mnie męczy.</div></div>
+            <div class="message-row"><div class="message-bubble their">Wszyscy kaszlą. To nie powód, żeby chować się przed światem. Zmarnujesz się tam.</div></div>
+            <div class="message-row"><div class="message-bubble mine">...</div></div>
+            <div class="message-row"><div class="message-bubble their">Brak odpowiedzi to też odpowiedź. Smutne.</div></div>
+
+            <div class="date-divider">Listopad</div>
+            <div class="message-row"><div class="message-bubble their">Nie odpisujesz = nie żyjesz? Czy może po prostu uznałeś, że egzystencja w szarości ci wystarcza? Daj znać, to przestanę zawracać sobie tobą głowę.</div></div>
+        </div>
+      </div>
+<!-- WIADOMOŚCI → Rozmowa z Moniką (piramida finansowa) -->
+<div class="app-content hidden" id="thread-monika">
+  <div class="app-header">
+    <button class="back-button" data-back="list">←</button> Monika
+  </div>
+  <div style="padding:12px">
+
+    <!-- Marzec -->
+    <div class="date-divider">Marzec</div>
+    <div class="message-row"><div class="message-bubble their">Słyszałam, że w magazynie płacą grosze. Mam coś, co może cię z tego wyciągnąć.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Brzmi jak sprzedaż marzeń 😅 co to?</div></div>
+    <div class="message-row"><div class="message-bubble their">Sieć partnerska z produktami wellness. Zero ryzyka, wypłaty co tydzień.</div></div>
+    <div class="message-row"><div class="message-bubble mine">„Zero ryzyka” zawsze brzmi jak ryzyko.</div></div>
+    <div class="message-row"><div class="message-bubble their">Spokojnie. Wchodzisz małym pakietem, a ludzie sami chcą dołączać.</div></div>
+
+    <!-- Kwiecień -->
+    <div class="date-divider">Kwiecień</div>
+    <div class="message-row"><div class="message-bubble their">Wpadniesz na prezentację online? 20 min. Gość z Warszawy żyje z tego od 2 lat.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Mogę obejrzeć, ale bez deklaracji.</div></div>
+    <div class="message-row"><div class="message-bubble their">Jasne. Miej otwarty umysł 😉</div></div>
+    <div class="message-row"><div class="message-bubble their">(po webinarze) No i jak?</div></div>
+    <div class="message-row"><div class="message-bubble mine">Dużo slajdów o „wolności”, mało konkretów.</div></div>
+    <div class="message-row"><div class="message-bubble their">Konkret: pakiet startowy 299 zł i jedziesz.</div></div>
+
+    <!-- Maj -->
+    <div class="date-divider">Maj</div>
+    <div class="message-row"><div class="message-bubble their">Nie musisz nic sprzedawać. System robi to za ciebie.</div></div>
+    <div class="message-row"><div class="message-bubble mine">To skąd zysk, jeśli nikt nie sprzedaje?</div></div>
+    <div class="message-row"><div class="message-bubble their">Z obrotu struktury. Każdy bierze pakiet, dostaje szkolenia i produkty.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Brzmi jak płacenie za prawo do płacenia.</div></div>
+    <div class="message-row"><div class="message-bubble their">Czemu sabotujesz coś, co może ci pomóc?</div></div>
+
+    <!-- Czerwiec -->
+    <div class="date-divider">Czerwiec</div>
+    <div class="message-row"><div class="message-bubble their">Masz mocny charakter, nadajesz się na lidera. Premia za dwa poziomy ludzi pod tobą.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Czyli rekrutacja.</div></div>
+    <div class="message-row"><div class="message-bubble their">Nie „musisz”, ale szkoda nie skorzystać.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Nie wciągam znajomych w coś, czego sam nie kumam.</div></div>
+
+    <!-- Lipiec -->
+    <div class="date-divider">Lipiec</div>
+    <div class="message-row"><div class="message-bubble their">Zrobię za ciebie pierwsze dwie osoby. Ty tylko wejdź w pakiet.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Wciąż nie.</div></div>
+    <div class="message-row"><div class="message-bubble their">Ile zarabiasz teraz? Ja po miesiącu miałam +1800.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Gratulacje, ale to nie dla mnie.</div></div>
+    <div class="message-row"><div class="message-bubble their">Nie bądź dumny „na biedaka”. To szansa.</div></div>
+
+    <!-- Sierpień -->
+    <div class="date-divider">Sierpień</div>
+    <div class="message-row"><div class="message-bubble their">Promka do północy: pakiet 199 zł i darmowe szkolenie „Jak budować zespół”.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Brzmi jak ticking clock. Mam migrenę.</div></div>
+    <div class="message-row"><div class="message-bubble their">Migrena minie, okazja nie.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Jeśli to takie pewne, wejdę bez opłaty, a ty weźmiesz % z moich zysków?</div></div>
+    <div class="message-row"><div class="message-bubble their">System ma zasady. Każdy inwestuje w siebie.</div></div>
+
+    <!-- Wrzesień -->
+    <div class="date-divider">Wrzesień</div>
+    <div class="message-row"><div class="message-bubble their">Znam twoją sytuację i chcę pomóc. Zrób pierwszy krok.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Pomoc bez warunku „kup pakiet” brzmi lepiej.</div></div>
+    <div class="message-row"><div class="message-bubble their">Z takim nastawieniem zostaniesz w magazynie do emerytury.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Wolę to niż dzwonić do znajomych z linkiem.</div></div>
+
+    <!-- Październik -->
+    <div class="date-divider">Październik</div>
+    <div class="message-row"><div class="message-bubble their">Dzisiaj u mnie spotkanie klubu liderów. Podjadę po ciebie.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Nie, dzięki.</div></div>
+    <div class="message-row"><div class="message-bubble their">Widzisz problem w każdym rozwiązaniu. To sabotaż.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Albo instynkt samozachowawczy.</div></div>
+
+    <!-- Listopad (początek) -->
+    <div class="date-divider">Listopad (początek)</div>
+    <div class="message-row"><div class="message-bubble their">Ostatni raz po przyjacielsku: wchodzisz czy nie?</div></div>
+    <div class="message-row"><div class="message-bubble mine">Nie.</div></div>
+    <div class="message-row"><div class="message-bubble their">To nie pisz za miesiąc, że brakuje ci kasy. Dawałam możliwość.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Nie mieszaj przyjaźni z rekrutacją.</div></div>
+    <div class="message-row"><div class="message-bubble their">To biznes. Nie rozumiesz skali.</div></div>
+
+    <!-- Listopad (tuż przed weekendem) -->
+    <div class="date-divider">Listopad (tuż przed weekendem)</div>
+    <div class="message-row"><div class="message-bubble their">Zamyka się pula. Jak teraz nie wejdziesz, będziesz żałował.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Nie wejdę.</div></div>
+    <div class="message-row"><div class="message-bubble their">Uparty. Nie marnujmy czasu.</div></div>
+    <div class="message-row"><div class="message-bubble mine">Dbaj o siebie.</div></div>
+    <div class="message-row"><div class="message-bubble their">Dbam — i o ludzi, którzy chcą iść do przodu. Powodzenia w magazynie.</div></div>
+
+  </div>
+</div>
+
+    <!-- CALL-APP (niezmieniony, ważny dla fabuły) -->
+    <div id="call-app" class="screen">
+      <div id="call-status">
+        <h2 id="caller-name">Sara</h2>
+        <p id="call-timer">Łączenie...</p>
+        <p id="dialogue-display"></p>
+      </div>
+      <div id="dialogue-options"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const screens = document.querySelectorAll('.screen');
+  const appIcons = document.querySelectorAll('.app-icon');
+  const browserIcon = document.getElementById('browser-icon');
+
+  function showScreen(screenId) {
+    screens.forEach(screen => {
+      if (screen.id === 'home-screen') {
+        screen.style.transform = (screenId === 'home-screen') ? 'translateX(0)' : 'translateX(-100%)';
+      } else {
+        screen.style.transform = (screen.id === screenId) ? 'translateX(0)' : 'translateX(100%)';
+      }
+    });
+  }
+
+  // Otwarcie aplikacji
+  appIcons.forEach(icon => {
+    if (icon.id === 'browser-icon') return;
+    icon.addEventListener('click', () => {
+      const appName = icon.dataset.app;
+      showScreen(`${appName}-app`);
+      if (appName === 'messages') {
+        // sygnał jak w oryginale (opcjonalny)
+        window.parent?.postMessage?.({ type: 'sanLoss', amount: 1, reason: 'phone:open_messages' }, '*');
+      }
+    });
+  });
+
+  // Link do bloga
+  browserIcon.addEventListener('click', () => { window.location.href = 'blog.html'; });
+
+  // ====== WIADOMOŚCI: lista ↔ wątek Sary ======
+  const threadsList = document.getElementById('threads-list');
+  const threadSara  = document.getElementById('thread-sara');
+
+  // Back z listy wiadomości do HOME
+  threadsList.querySelector('[data-back="home"]').addEventListener('click', () => showScreen('home-screen'));
+
+  // Otwórz wątek Sary
+  const threadEntrySara = document.querySelector('.thread-entry[data-thread="sara"]');
+  threadEntrySara.addEventListener('click', () => {
+    threadsList.classList.add('hidden');
+    threadSara.classList.remove('hidden');
+    setTimeout(() => { threadSara.scrollTop = threadSara.scrollHeight; }, 0);
+  });
+
+  // Powrót z wątku Sary do listy wątków
+  threadSara.querySelector('[data-back="list"]').addEventListener('click', () => {
+    threadSara.classList.add('hidden');
+    threadsList.classList.remove('hidden');
+  });
+// ====== Otwórz/Zamknij wątek Szefa ======
+const threadSzef = document.getElementById('thread-szef');
+
+// otwarcie
+document.querySelector('.thread-entry[data-thread="szef"]').addEventListener('click', () => {
+  threadsList.classList.add('hidden');
+  threadSzef.classList.remove('hidden');
+  setTimeout(() => { threadSzef.scrollTop = threadSzef.scrollHeight; }, 0);
+});
+// ====== Otwórz/Zamknij wątek Karoliny ======
+const threadKarolina = document.getElementById('thread-karolina');
+const entryKarolina  = document.querySelector('.thread-entry[data-thread="karolina"]');
+
+if (entryKarolina && threadKarolina) {
+  entryKarolina.addEventListener('click', () => {
+    threadsList.classList.add('hidden');
+    threadKarolina.classList.remove('hidden');
+    setTimeout(() => { threadKarolina.scrollTop = threadKarolina.scrollHeight; }, 0);
+  });
+
+  threadKarolina.querySelector('[data-back="list"]').addEventListener('click', () => {
+    threadKarolina.classList.add('hidden');
+    threadsList.classList.remove('hidden');
+  });
+}
+
+// ====== Otwórz/Zamknij wątek Moniki ======
+const threadMonika = document.getElementById('thread-monika');
+
+document.querySelector('.thread-entry[data-thread="monika"]').addEventListener('click', () => {
+  threadsList.classList.add('hidden');
+  threadMonika.classList.remove('hidden');
+  setTimeout(() => { threadMonika.scrollTop = threadMonika.scrollHeight; }, 0);
+});
+
+threadMonika.querySelector('[data-back="list"]').addEventListener('click', () => {
+  threadMonika.classList.add('hidden');
+  threadsList.classList.remove('hidden');
+});
+
+// powrót
+threadSzef.querySelector('[data-back="list"]').addEventListener('click', () => {
+  threadSzef.classList.add('hidden');
+  threadsList.classList.remove('hidden');
+});
+
+  // ====== KONTAKTY → DZWONIENIE (oryginalny minigame) ======
+  const backButtonsContacts = document.querySelectorAll('#contacts-app [data-back="home"]');
+  backButtonsContacts.forEach(btn => btn.addEventListener('click', () => showScreen('home-screen')));
+
+  const contactEntries = document.querySelectorAll('.contact-entry');
+  const dialogueDisplay = document.getElementById('dialogue-display');
+  const dialogueOptions = document.getElementById('dialogue-options');
+
+  // Drzewo dialogowe — zachowane z Twojej wersji
+  const dialogueTree = {
+    start: {
+      text: "(Odbiera po pierwszym sygnale. Słychać przyspieszony oddech)",
+      options: [
+        { text: "Sara? To ja. Wszystko w porządku?", target: "q1" }
+      ]
+    },
+    q1: {
+      text: "Sławek? Wiedziałam... wiedziałam, że zadzwonisz. Nic nie jest w porządku.",
+      options: [
+        { text: "Dostałaś list?", target: "q_list", condition: state => !state.asked_list },
+        { text: "Miałaś znowu ten sen?", target: "q_sen", condition: state => !state.asked_sen },
+        { text: "Musimy się spotkać. Natychmiast.", target: "q_spotkanie", condition: state => state.asked_list && state.asked_sen }
+      ]
+    },
+    q_list: {
+      text: "Tak. Chyba każda z nas dostała. Papier jest stary, ale pismo... pismo jest świeże. To niemożliwe.",
+      options: [
+        { text: "Miałaś znowu ten sen?", target: "q_sen", condition: state => !state.asked_sen },
+        { text: "Musimy się spotkać. Natychmiast.", target: "q_spotkanie", condition: state => state.asked_sen }
+      ]
+    },
+    q_sen: {
+      text: "Sen? To było coś więcej niż sen. Obudziłam się z krzykiem. Znowu ten las, ona... i ta istota za nią. Czuję, jakby fragment tego snu wciąż był ze mną.",
+      options: [
+        { text: "Dostałaś list?", target: "q_list", condition: state => !state.asked_list },
+        { text: "Musimy się spotkać. Natychmiast.", target: "q_spotkanie", condition: state => state.asked_list }
+      ]
+    },
+    q_spotkanie: {
+      text: "Wiem. Monika już po nas jedzie, organizuje wszystko. Mówiła, że to jedyny sposób, żeby to zakończyć.",
+      options: [
+        { text: "Gdzie i kiedy?", target: "q_final" }
+      ]
+    },
+    q_final: {
+      text: "Będziemy po ciebie za około pół godziny. Czekaj na ulicy. I Sławek... uważaj na siebie. Coś się naprawdę zbliża.",
+      options: [
+        { text: "Rozumiem. Będę czekał.", target: "end" }
+      ]
+    },
+    end: {
+      text: "(Słychać trzask, jakby gwałtownie się rozłączyła)",
+      options: [
+        { text: "Rozłącz się", target: "finish", isEndCall: true }
+      ]
+    }
+  };
+
+  let dialogueState = {};
+
+  function renderDialogue() {
+    const node = dialogueTree[dialogueState.currentNode];
+    dialogueDisplay.textContent = node.text;
+    dialogueOptions.innerHTML = '';
+
+    const availableOptions = node.options.filter(option => option.condition ? option.condition(dialogueState) : true);
+    availableOptions.forEach(option => {
+      const button = document.createElement('button');
+      button.className = option.isEndCall ? 'dialogue-btn end-call' : 'dialogue-btn';
+      button.textContent = option.text;
+      button.onclick = () => {
+        if (option.target === 'finish') {
+          window.parent.postMessage('phoneMinigameFinished', '*');
+        } else {
+          // znacznik: co już zapytano
+          if (dialogueState.currentNode === 'q1' || dialogueState.currentNode === 'q_list') dialogueState.asked_sen = true;
+          if (dialogueState.currentNode === 'q1' || dialogueState.currentNode === 'q_sen') dialogueState.asked_list = true;
+
+          dialogueState.currentNode = option.target;
+          renderDialogue();
+        }
+      };
+      dialogueOptions.appendChild(button);
+    });
+  }
+
+  contactEntries.forEach(entry => {
+    entry.addEventListener('click', () => {
+      const who = entry.dataset.contact;
+      if (who === 'sara') {
+        dialogueState = { currentNode: "start", asked_list: false, asked_sen: false };
+        showScreen('call-app');
+        setTimeout(() => {
+          document.getElementById('call-timer').textContent = '00:01';
+          renderDialogue();
+        }, 1000);
+      } else if (who === 'praca') {
+        alert("Myślisz o tym przez chwilę. Po tym wszystkim, co się dzieje, praca wydaje się odległym, absurdalnym konceptem. Nie, teraz nie czas na to.");
+      } else {
+        alert("Próbujesz zadzwonić, ale słyszysz tylko sygnał zajętości. Wygląda na to, że właśnie z kimś rozmawiają...");
+      }
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ciche Wzgórze — Pokój</title>
+<style>
+  :root{ --bg:#07090c; --fg:#e6e6e6; --muted:#9aa0a6; --accent:#c7a26d; }
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0;
+    background:radial-gradient(1200px 800px at 70% -10%, #11161e 0%, #07090c 60%, #05070a 100%);
+    color:var(--fg);
+    font:16px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans",Ubuntu,Cantarell}
+  .wrap{max-width:920px; margin:0 auto; padding:24px 16px 120px}
+  header{display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:8px}
+  h1{font-size:20px; margin:0; letter-spacing:.02em; color:#f1f1f1}
+  .pill{display:inline-block; padding:.25em .6em; border:1px solid rgba(255,255,255,.12);
+    border-radius:999px; font-size:12px; color:#cbd5e1; margin-right:6px}
+  .panel{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07);
+    border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.35);
+    display:flex; flex-direction:column;}
+  #log{height:60vh; min-height:340px; overflow:auto; padding:18px 18px 6px; scrollbar-width:thin}
+  #log::-webkit-scrollbar{height:8px; width:8px}
+  #log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1); border-radius:20px}
+  .line{margin:0 0 14px; opacity:.96}
+  .type{border-right:2px solid rgba(255,255,255,.65); animation:caret .85s steps(1) infinite}
+  @keyframes caret{50%{border-color:transparent}}
+  .toolbar{display:flex; gap:10px; align-items:center; color:var(--muted); font-size:14px;
+    padding:10px 12px; border-top:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02))}
+  input[type=range]{accent-color:#b5c4ff}
+  button{padding:10px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.06); color:var(--fg); cursor:pointer}
+  button:hover{background:rgba(255,255,255,.1)}
+  .sep{opacity:.35; margin:0 .25em}
+  #inputbar{display:flex; gap:10px; padding:10px; border-top:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02))}
+  #cmd{flex:1; padding:12px 14px; border-radius:10px;
+    border:1px solid rgba(255,255,255,.08); background:rgba(3,6,9,.6); color:var(--fg); outline:none}
+  #cmd::placeholder{color:#8892a6}
+  .note{color:var(--muted); font-size:13px; margin-top:8px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Ciche Wzgórze — Pokój</h1>
+      <div>
+        <span class="pill">interakcja</span>
+        <span class="pill">PL</span>
+        <span class="pill">demo</span>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div id="log" aria-live="polite"></div>
+      <div class="toolbar">
+        <button id="replay">Restart sceny</button>
+        <button id="fast">Przyspiesz</button>
+        <span class="sep">|</span>
+        <span>Tempo</span>
+        <input type="range" id="speed" min="0" max="3" step="1" value="3" />
+        <span id="speedLabel">powoli</span>
+        <span class="sep">|</span>
+        <button id="continue" disabled>Następny plik</button>
+      </div>
+      <div id="inputbar">
+        <input id="cmd" autocomplete="off" spellcheck="false"
+          placeholder="komendy: rozejrzyj się, wstań..." />
+        <button id="send">Wyślij</button>
+      </div>
+    </section>
+    <p class="note" id="hint" style="display:none"></p>
+  </div>
+
+<script>
+(() => {
+  /* ===== Typewriter / UI bazowe ===== */
+  const SPEEDS = [0, 2, 10, 60];
+  let speedIdx = 3;
+  const labels = ["natychmiast","szybko","standard","powoli"];
+
+  const log = document.getElementById('log');
+  const replayBtn = document.getElementById('replay');
+  const fastBtn = document.getElementById('fast');
+  const speed = document.getElementById('speed');
+  const speedLabel = document.getElementById('speedLabel');
+  const continueBtn = document.getElementById('continue');
+  const cmd = document.getElementById('cmd');
+  const send = document.getElementById('send');
+  const hint = document.getElementById('hint');
+
+  function scrollBottom(){ log.scrollTop = log.scrollHeight; }
+  function writeLine(html){ const d=document.createElement('div'); d.className='line'; d.innerHTML=html;
+    log.appendChild(d); scrollBottom(); return d; }
+  async function typeText(text){
+    const d = writeLine(""); const s=document.createElement('span'); s.className='type'; d.appendChild(s);
+    const ms=SPEEDS[speedIdx]; if(ms<=0){ s.textContent=text; s.classList.remove('type'); return; }
+    for(const ch of text){ s.textContent+=ch; await new Promise(r=>setTimeout(r,ms)); scrollBottom(); }
+    s.classList.remove('type');
+  }
+  function type(t){ return typeText(t); }
+  function escapeHtml(s){ return s.replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+  function writePrompt(t){ writeLine("&gt; "+escapeHtml(t)); }
+
+  let availableCommands = [];
+  function setCommands(arr){ availableCommands = arr.slice(); updateHint(); }
+  function addCommand(c){ if(!availableCommands.includes(c)){ availableCommands.push(c); updateHint(); } }
+  function updateHint(){
+    hint.style.display = "block";
+    hint.innerHTML = "Komendy: " + availableCommands.map(c => "<b>"+c+"</b>").join(", ") + ".";
+  }
+
+  const SceneManager = {
+    current:null, scenes:{},
+    register(n,s){ this.scenes[n]=s; },
+    async goTo(n){
+      if(this.current && this.scenes[this.current].exit) this.scenes[this.current].exit();
+      this.current=n; if(this.scenes[n].enter) await this.scenes[n].enter();
+    },
+    handle(t){
+      const s = this.scenes[this.current];
+      if(!s || !s.handle) return false;
+      return !!s.handle(t);
+    }
+  };
+
+  /* ===================== SCENA: ROOM ===================== */
+  SceneManager.register("room", (function(){
+    const S = {
+      lampOn:false, haveLetter:false, letterRead:false,
+      drawerOpen:false, keyFound:false, diaryRead:false,
+      mirrorChecked:false, windowChecked:false,
+      envelopeRoll:null, letterInspectRoll:null, // <-- nowe rzuty k6
+      inventory:[]
+    };
+
+    function enter(){
+      setCommands(["rozejrzyj się","wstań","pomoc"]);
+      type("Budzisz się gwałtownie. Serce dudni ci w piersi. Wokół panuje półmrok. Spróbuj się rozejrzeć...");
+      cmd.focus();
+    }
+
+    function lookRoom(){
+      if(!S.lampOn){
+        type("Ciemność skrywa większość pomieszczenia. Ledwo widzisz kontury mebli. Najbliżej ciebie stoi stolik z lampką nocną.");
+        addCommand("zapal lampkę");
+      } else {
+        type("Ciepły krąg światła odgania mrok. Na stoliku leży koperta. Szuflada jest lekko uchylona. Budzik pokazuje: 3:03.");
+      }
+    }
+
+    const standUp = ()=> type("Siadasz na łóżku. Podłoga skrzypi pod tobą.");
+
+    function lamp(on=true){
+      if(on && S.lampOn){ type("Lampka już świeci."); return; }
+      if(!on && !S.lampOn){ type("I tak jest ciemno."); return; }
+      S.lampOn = on;
+      if(on){
+        type("Klik. Światło rozprasza cienie. Widzisz wyraźnie stolik, kopertę i lekko uchyloną szufladę.");
+        addCommand("weź list");
+        addCommand("przeszukaj szufladę");
+      } else {
+        type("Klik. Znowu ciemno.");
+      }
+    }
+
+    function takeLetter(){
+      if(!S.lampOn){ type("W ciemności nie chcesz grzebać przy stoliku. Zapal lampkę."); return; }
+      if(S.haveLetter){ type("List już masz."); return; }
+      S.haveLetter = true; S.inventory.push("list Zosi");
+      type("Bierzesz kopertę. Papier jest stary i zawilgotniały.");
+      addCommand("przyjrzyj się kopercie");
+      addCommand("przyjrzyj się listowi"); // nowe komendy oględzin
+      addCommand("obejrzyj list");
+      addCommand("czytaj list");
+    }
+
+    /* ===== OGLĘDZINY KOPERTY — rzut k6 (zapamiętywany) ===== */
+    function rollOnce(field){
+      if(S[field]!==null) return S[field];
+      const r = Math.floor(Math.random()*6)+1;
+      S[field] = r; return r;
+    }
+
+    function inspectEnvelope(){
+      if(!S.lampOn){ type("Za ciemno, żeby przyglądać się kopercie."); return; }
+      if(!S.haveLetter){ type("Najpierw weź kopertę ze stolika."); return; }
+      const r = rollOnce("envelopeRoll");
+      if(r<=2){
+        type("Przyglądasz się kopercie, ale nic szczególnego nie rzuca się w oczy (wynik: "+r+").");
+      } else if(r<=4){
+        type("Na stemplu pocztowym widzisz: „Ciche Wzgórze”. Data: 16 listopada. To dwa dni temu (wynik: "+r+").");
+      } else {
+        type("Dostrzegasz adres nadawczy i wyraźny stempel: „Ciche Wzgórze”, data 16 listopada (wynik: "+r+").");
+        type("Nagle uderza cię wizja: mała dziewczynka pochylona nad biurkiem, skrobiąca piórem papier. Obraz znika.");
+      }
+    }
+
+    /* ===== OGLĘDZINY LISTU — rzut k6 (zapamiętywany) ===== */
+    function inspectLetter(){
+      if(!S.lampOn){ type("Za ciemno, by cokolwiek dostrzec."); return; }
+      if(!S.haveLetter){ type("Najpierw weź list."); return; }
+      const r = rollOnce("letterInspectRoll");
+      if(r<=2){
+        type("Papier jak papier. Nic szczególnego (wynik: "+r+").");
+      } else if(r<=4){
+        type("Litery są nierówne, koślawe — zdecydowanie dziecięce pismo (wynik: "+r+").");
+      } else {
+        type("Dziecięce pismo, bez wątpienia. Ale to niemożliwe, żeby pisała to Zosia — zaginęła 20 lat temu. Dzisiaj miałaby około trzydziestu (wynik: "+r+").");
+      }
+    }
+
+    function readLetter(){
+      if(!S.haveLetter){ type("Najpierw weź list."); return; }
+      if(!S.lampOn){ type("Za ciemno, by czytać."); return; }
+      if(!S.letterRead){
+        S.letterRead = true;
+        (async ()=>{
+          await type("Cześć... (tu wklej swoją treść listu Zosi).");
+          setTimeout(()=>{
+            type("Za oknem nagły hałas, jakby przewrócono metalowy przedmiot.");
+            addCommand("podejdź do okna");
+          },800);
+        })();
+      } else {
+        type("Znasz już każde słowo.");
+      }
+    }
+
+    function searchDrawer(){
+      if(!S.lampOn){ type("W ciemności nie widzisz zamka. Zapal lampkę."); return; }
+      if(S.drawerOpen){ type("Szuflada już otwarta."); return; }
+      S.drawerOpen = true; S.keyFound = true; S.inventory.push("mały klucz");
+      type("W szufladzie znajdujesz mały, żelazny klucz i rysę na drewnie, jakby czymś drapano.");
+      addCommand("użyj klucza");
+    }
+
+    function useKey(){
+      if(!S.keyFound){ type("Nie masz żadnego klucza."); return; }
+      if(S.diaryRead){ type("Kasetka już otwarta."); return; }
+      S.diaryRead = true; S.inventory.push("pamiętnik");
+      type("Klucz pasuje do małej kasetki w szafce. Wewnątrz znajduje się stary pamiętnik.");
+      addCommand("czytaj pamiętnik");
+    }
+
+    function readDiary(){
+      if(!S.diaryRead){ type("Nie masz pamiętnika."); return; }
+      type("Strony pełne są rysunków i zdań o dziwnych snach. Na końcu: «Nie wolno patrzeć w lustro po zmroku.»");
+      addCommand("spójrz w lustro");
+    Podchodzisz do okna. Szyba jest zimna w dotyku, para z oddechu osiada na jej powierzchni.
+W blasku żółtawej latarni przed kamienicą migocze przewrócony kosz na śmieci. Obok dostrzegasz sylwetkę mężczyzny, która oddala się zanim zdążysz się jej przyjrzeć. Serce bije ci mocniej.

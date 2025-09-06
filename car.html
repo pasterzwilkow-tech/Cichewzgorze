@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ciche Wzgórze — Poranek (skrót)</title>
+<style>
+  :root{ --bg:#07090c; --fg:#e6e6e6; --muted:#9aa0a6; --accent:#c7a26d; --panel:rgba(255,255,255,.04); --line:rgba(255,255,255,.08); }
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0; background:radial-gradient(1200px 800px at 70% -10%, #11161e 0%, #07090c 60%, #05070a 100%); color:var(--fg); font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",Ubuntu,Cantarell}
+  .wrap{max-width:920px; margin:0 auto; padding:24px 16px 120px}
+  header{display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:8px}
+  h1{font-size:20px; margin:0; letter-spacing:.02em; color:#f1f1f1}
+  .pill{display:inline-flex; gap:6px; align-items:center; padding:.25em .6em; border:1px solid rgba(255,255,255,.12); border-radius:999px; font-size:12px; color:#cbd5e1; margin-right:6px}
+  .pill strong{color:#fff; font-weight:700}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.35); display:flex; flex-direction:column;}
+  #log{height:60vh; min-height:340px; overflow:auto; padding:18px 18px 6px; scrollbar-width:thin}
+  #log::-webkit-scrollbar{height:8px; width:8px}
+  #log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1); border-radius:20px}
+  .line{margin:0 0 14px; opacity:.96}
+  .type{border-right:2px solid rgba(255,255,255,.65); animation:caret .85s steps(1) infinite}
+  @keyframes caret{50%{border-color:transparent}}
+  .toolbar{display:flex; gap:10px; align-items:center; color:var(--muted); font-size:14px; padding:10px 12px; border-top:1px solid var(--line); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02))}
+  input[type=range]{accent-color:#b5c4ff}
+  button{padding:10px 14px; border-radius:10px; border:1px solid var(--line); background:rgba(255,255,255,.06); color:var(--fg); cursor:pointer}
+  button:hover{background:rgba(255,255,255,.1)}
+  .sep{opacity:.35; margin:0 .25em}
+  #inputbar{display:flex; gap:10px; padding:10px; border-top:1px solid var(--line); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02))}
+  #cmd{flex:1; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:rgba(3,6,9,.6); color:var(--fg); outline:none}
+  #cmd::placeholder{color:#8892a6}
+  .note{color:var(--muted); font-size:13px}
+  .accent{color:var(--accent); font-weight:600}
+  .overlay-diary { position: fixed; inset: 0; display: none; place-items: center; background: rgba(0,0,0,.6); backdrop-filter: blur(2px); z-index: 9999; }
+  .overlay-diary.open { display: grid; }
+  .overlay-diary .box { width: min(960px, 95vw); height: min(640px, 85vh); background: rgba(10,12,16,.96); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; overflow: hidden; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  .overlay-diary .box header { position:absolute; inset:0 auto auto 0; width:100%; height:42px; display:flex; align-items:center; justify-content:space-between; padding: 0 10px; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border-bottom: 1px solid rgba(255,255,255,.08); font-size: 14px; color:#cbd5e1; }
+  .overlay-diary .close { border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:#e6e6e6; border-radius: 8px; padding:6px 10px; cursor:pointer; }
+  .overlay-diary iframe { position:absolute; inset:42px 0 0 0; border:0; width:100%; height:calc(100% - 42px); background:#000; }
+
+  /* === SANITY FX (CSS) === */
+  #sanFx{position:fixed; inset:0; pointer-events:none; z-index:50}
+  #sanFx .vig{position:absolute; inset:-10%; background:
+    radial-gradient(70% 70% at 50% 50%, transparent 45%, rgba(0,0,0,.65) 100%);
+    opacity:0; transition:opacity .35s ease}
+  #sanFx .scan{position:absolute; inset:0;
+    background:repeating-linear-gradient(to bottom, rgba(255,255,255,.035) 0 2px, rgba(0,0,0,0) 2px 4px);
+    mix-blend-mode:overlay; opacity:0; transition:opacity .35s ease}
+  body.san-t2 .panel{filter:saturate(.9) contrast(1.03)}
+  body.san-t3 .panel{filter:hue-rotate(-6deg) saturate(.85) contrast(1.06)}
+  body.san-t4 .panel{filter:hue-rotate(-12deg) saturate(.75) contrast(1.1) blur(.3px)}
+  body.san-t5 .panel{filter:hue-rotate(-18deg) saturate(.6) contrast(1.18) blur(.6px)}
+  body.san-t3 #sanFx .vig{opacity:.28}
+  body.san-t4 #sanFx .vig{opacity:.5}
+  body.san-t5 #sanFx .vig{opacity:.72}
+  body.san-t4 #sanFx .scan{opacity:.15}
+  body.san-t5 #sanFx .scan{opacity:.28}
+  @keyframes sanJitter { 0%,97%,100%{transform:translate3d(0,0,0)} 98%{transform:translate3d(.6px,-.6px,0)} 99%{transform:translate3d(-.7px,.5px,0)} }
+  body.san-t4 .panel, body.san-t5 .panel { animation:sanJitter 7.5s infinite }
+  body.san-t5 #log .line{ text-shadow:1px 0 rgba(255,0,0,.28), -1px 0 rgba(0,255,255,.22); }
+</style>
+</head>
+<body>
+  <div id="sanFx" aria-hidden="true">
+    <div class="vig"></div>
+    <div class="scan"></div>
+  </div>
+
+  <div class="wrap">
+    <header>
+      <h1>Ciche Wzgórze — Poranek</h1>
+      <div>
+        <span class="pill" id="sanBadge" title="Poczytalność (SAN)"><strong>SAN</strong>&nbsp;<span id="sanVal">—</span></span>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div id="log" aria-live="polite"></div>
+      <div class="toolbar">
+        <button id="fast">Przyspiesz</button>
+        <span class="sep">|</span>
+        <span>Tempo</span>
+        <input type="range" id="speed" min="0" max="3" step="1" value="3" />
+        <span id="speedLabel">powoli</span>
+        <span class="sep">|</span>
+        <button id="restart">Restart</button>
+        <button id="next" disabled>Następny plik</button>
+      </div>
+      <div id="inputbar">
+        <input id="cmd" autocomplete="off" spellcheck="false" placeholder="wpisz komendę…" />
+        <button id="send">Wyślij</button>
+      </div>
+    </section>
+    <p class="note" id="hint" style="display:none"></p>
+  </div>
+
+  <div id="diaryOverlay" class="overlay-diary" aria-hidden="true">
+    <div class="box">
+      <header>
+        <span>📓 Pamiętnik — coś się w nim zmienia…</span>
+        <button class="close" id="closeDiary">Zamknij</button>
+      </header>
+      <iframe id="diaryFrame" src="about:blank" title="Pamiętnik"></iframe>
+    </div>
+  </div>
+
+  <div id="flyerOverlay" class="overlay-diary" aria-hidden="true">
+    <div class="box">
+      <header>
+        <span>📰 Ulotka — interakcja</span>
+        <button class="close" id="closeFlyer">Zamknij</button>
+      </header>
+      <iframe id="flyerFrame" src="about:blank" title="Ulotka interaktywna"></iframe>
+    </div>
+  </div>
+
+<script src="sanity.js"></script>
+<script>
+/* === SAN PERSIST (localStorage) === */
+(() => {
+  const SAN_KEY = "cw.san.v1";
+  const clamp = v => Math.max(0, Math.min(100, v|0));
+  const loadSAN = () => {
+    const raw = localStorage.getItem(SAN_KEY);
+    const n = +raw;
+    return Number.isFinite(n) ? clamp(n) : 100;
+  };
+  const saveSAN = v => { try{ localStorage.setItem(SAN_KEY, String(clamp(v))); }catch(e){} };
+
+  window.SAN = {
+    key: SAN_KEY,
+    load: loadSAN,
+    save: saveSAN,
+    reset(v=100){ try{ localStorage.removeItem(SAN_KEY); }catch(e){}; saveSAN(v); if (window.Sanity?.set) Sanity.set(v); }
+  };
+
+  window.addEventListener("storage", (e) => {
+    if (e.key === SAN_KEY && e.newValue != null && window.Sanity?.set) {
+      const next = clamp(+e.newValue);
+      if (Number.isFinite(next) && window.Sanity?.get && Sanity.get() !== next) {
+        Sanity.set(next);
+      }
+    }
+  });
+})();
+</script>
+<script src="inventory.js"></script>
+
+<script>
+(() => {
+  const NEXT_FILE = "station.html";
+
+  const SPEEDS = [0, 2, 10, 60];
+  let speedIdx = 3;
+  const labels = ["natychmiast","szybko","standard","powoli"];
+
+  const log = document.getElementById('log');
+  const speed = document.getElementById('speed');
+  const speedLabel = document.getElementById('speedLabel');
+  const fastBtn = document.getElementById('fast');
+  const restartBtn = document.getElementById('restart');
+  const nextBtn = document.getElementById('next');
+  const cmd = document.getElementById('cmd');
+  const send = document.getElementById('send');
+  const hint = document.getElementById('hint');
+
+  let queue = Promise.resolve();
+  let sanTypeFactor = 1;
+  function scrollBottom(){ log.scrollTop = log.scrollHeight; }
+  function writeLine(html=""){ const d=document.createElement('div'); d.className='line'; d.innerHTML=html; log.appendChild(d); scrollBottom(); return d; }
+  function escapeHtml(s){ return String(s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+  function promptEcho(t){ writeLine("&gt; " + escapeHtml(t)); }
+
+  function typeText(text){
+    queue = queue.then(async () => {
+      const d = writeLine("");
+      const s = document.createElement('span'); s.className="type"; d.appendChild(s);
+      const ms = Math.max(0, Math.round(SPEEDS[speedIdx] * sanTypeFactor));
+      const str = String(text ?? "");
+      if(ms<=0){ s.textContent=str; s.classList.remove('type'); return; }
+      for(const ch of str){ s.textContent += ch; await new Promise(r=>setTimeout(r, ms)); scrollBottom(); }
+      s.classList.remove('type');
+    });
+    return queue;
+  }
+  async function say(lines, gap=350){ for(const l of lines){ await typeText(l); if(gap) await new Promise(r=>setTimeout(r,gap)); } }
+
+  /* ===== SANITY bootstrap ===== */
+  const sanValEl = document.getElementById("sanVal");
+  let sanWhisperTimer = null;
+  let sanScrambleTimer = null;
+
+  function tierFor(v){ return v>=80?1 : v>=60?2 : v>=40?3 : v>=20?4 : 5; }
+  function applySanityTier(t){
+    document.body.classList.remove('san-t1','san-t2','san-t3','san-t4','san-t5');
+    document.body.classList.add('san-t'+t);
+    sanTypeFactor = [1.0, 0.95, 0.9, 0.85, 0.8][t-1] || 1;
+
+    if (sanWhisperTimer) { clearInterval(sanWhisperTimer); sanWhisperTimer = null; }
+    if (t >= 4) {
+      sanWhisperTimer = setInterval(()=>{
+        if (Math.random() < 0.35) {
+          const pool = ["…to nie ona…","…nie odwracaj się…","…słyszysz?…","…nie jesteś sam…","…znowu patrzą…"];
+          writeLine(`<span style="color:#aeb4bd;font-style:italic;opacity:.8">${pool[Math.floor(Math.random()*pool.length)]}</span>`);
+        }
+      }, 9000);
+    }
+
+    if (sanScrambleTimer) { clearInterval(sanScrambleTimer); sanScrambleTimer = null; }
+    if (t === 5) {
+      sanScrambleTimer = setInterval(()=> scrambleLogOnce(0.10, 160), 900);
+    }
+  }
+  function scrambleLogOnce(intensity=0.10, duration=150){
+      const spans = log?.querySelectorAll('.line span, .line') || [];
+      if (!spans.length) return;
+      const target = spans[Math.floor(Math.random()*spans.length)];
+      const original = target.textContent;
+      if (!original || original.length < 2) return;
+      const idx = Math.max(1, Math.floor(original.length * intensity));
+      let chars = original.split('');
+      for (let i = 0; i < idx; i++) {
+        const p = Math.floor(Math.random() * chars.length);
+        if (!/\s/.test(chars[p])) {
+          const code = chars[p].codePointAt(0);
+          chars[p] = String.fromCodePoint(code + 1);
+        }
+      }
+      target.textContent = chars.join('');
+      setTimeout(() => { target.textContent = original; }, duration + Math.floor(Math.random()*120));
+  }
+  function syncSan(v){
+    if (sanValEl) sanValEl.textContent = `${v}/100`;
+    applySanityTier(tierFor(v));
+  }
+  if (window.Sanity && typeof Sanity.init === "function") {
+    const _startSAN = (window.SAN?.load ? window.SAN.load() : 100);
+    Sanity.init({ start: _startSAN, mount: ".toolbar" });
+    const _onSanChange = (v)=>{ try{ window.SAN?.save?.(v); }catch(e){}; syncSan(v); };
+    if (typeof Sanity.subscribe === "function")     Sanity.subscribe(_onSanChange);
+    else if (typeof Sanity.onChange === "function")  Sanity.onChange(_onSanChange);
+    syncSan(Sanity.get?.() ?? _startSAN);
+  } else {
+    syncSan(window.SAN?.load?.() ?? 100);
+  }
+  if (window.Sanity && typeof Sanity.wrapTypeText === "function") {
+    const _origType = typeText;
+    typeText = (txt)=> (Sanity.get && Sanity.get()<20 ? Sanity.wrapTypeText(_origType)(txt) : _origType(txt));
+  }
+
+  let available = [];
+  function setCmds(arr){
+    available = arr.slice();
+    if(!available.includes("ekwipunek")) available.push("ekwipunek");
+    showHint();
+  }
+  function addCmd(c){
+    if(!available.includes(c)){
+      available.push(c);
+      if(!available.includes("ekwipunek")) available.push("ekwipunek");
+      showHint();
+    }
+  }
+  function removeCmd(c){
+    const i = available.indexOf(c);
+    if(i>-1){
+      available.splice(i,1);
+      showHint();
+    }
+  }
+  
+  function consumeCmd(canonCmd){
+    removeCmd(canonCmd);
+  }
+  
+  function showHint(){
+    hint.style.display="block";
+    hint.innerHTML="Komendy: " + (available.length ? available.map(c=>"<b>"+escapeHtml(c)+"</b>").join(", ") : "—") + ".";
+  }
+
+  const SM = {
+    current: null,
+    scenes: {},
+    reg(n, o){ this.scenes[n] = o; },
+    async go(n){
+      if(this.current && this.scenes[this.current]?.exit){ this.scenes[this.current].exit(); }
+      this.current = n;
+      if(this.scenes[n]?.enter){ await this.scenes[n].enter(); }
+    },
+    handle(t){
+      const S = this.scenes[this.current];
+      if(!S || !S.handle) return false;
+      return !!S.handle(t);
+    }
+  };
+
+  const G = {
+    washed:false, dressed:false, leftHome:false, brushed:false, hungry:false, diaryUnlocked:false,
+    heardOnce:false, checkedMailbox:false, pinched:false, lightPressed:false,
+    sawStains:false, lookedViewer:false, readNotice:false, sniffed:false, countedSteps:false,
+    knocked12:false, elevatorDead:true,
+    preConversationCmds: [],
+  };
+
+  function openDiaryGame() {
+    const ov = document.getElementById('diaryOverlay');
+    const fr = document.getElementById('diaryFrame');
+    fr.src = 'diary.html';
+    ov.classList.add('open');
+    ov.setAttribute('aria-hidden','false');
+  }
+  function closeDiaryGame() {
+    const ov = document.getElementById('diaryOverlay');
+    const fr = document.getElementById('diaryFrame');
+    ov.classList.remove('open');
+    ov.setAttribute('aria-hidden','true');
+    fr.src = 'about:blank';
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const ov = document.getElementById('diaryOverlay');
+    const btn = document.getElementById('closeDiary');
+    btn?.addEventListener('click', closeDiaryGame);
+    ov?.addEventListener('click', (e) => { if (e.target === ov) closeDiaryGame(); });
+  });
+  
+  function handleOpenDiary(canonStr){
+    if (canonStr === "czytaj pamiętnik" && G.diaryUnlocked) {
+      openDiaryGame();
+      consumeCmd("czytaj pamiętnik");
+      return true;
+    }
+    return false;
+  }
+
+  function openFlyerGame(){
+    const ov = document.getElementById('flyerOverlay');
+    const fr = document.getElementById('flyerFrame');
+    fr.src = 'ulotka-gra.html';
+    ov.classList.add('open');
+    ov.setAttribute('aria-hidden','false');
+  }
+  
+  // ZMIANA: Dodano tekst po zamknięciu minigry
+  function closeFlyerGame(){
+    const ov = document.getElementById('flyerOverlay');
+    const fr = document.getElementById('flyerFrame');
+    ov.classList.remove('open');
+    ov.setAttribute('aria-hidden','true');
+    fr.src = 'about:blank';
+    typeText("Co to było? Chyba znowu masz halucynacje...");
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const ov = document.getElementById('flyerOverlay');
+    const btn = document.getElementById('closeFlyer');
+    btn?.addEventListener('click', closeFlyerGame);
+    ov?.addEventListener('click', (e) => { if (e.target === ov) closeFlyerGame(); });
+  });
+  window.addEventListener('message', (e) => {
+    if (e.data === 'closeUlotkaMinigame') closeFlyerGame();
+  });
+  
+  function handleOpenFlyer(canonStr){
+    if (canonStr === "otwórz ulotkę") {
+      if (G.board?.read?.sekta) {
+        openFlyerGame();
+        consumeCmd("otwórz ulotkę");
+      } else {
+        writeLine("<span class='accent'>Najpierw przeczytaj ulotkę („czytaj ulotkę”).</span>");
+      }
+      return true;
+    }
+    return false;
+  }
+
+  const ALIAS = {
+    "rozejrzyj się":["rozejrzyj się","rozejrzyj","spójrz"],
+    "umyj się":["umyj się","umyj sie","umyj twarz"],
+    "umyj zęby":["umyj zęby","umyj zeby","wyszczotkuj zęby","wyszczotkuj zeby","umyj zeby szczoteczką","umyj zeby szczoteczka"],
+    "ubierz się":["ubierz się","ubierz sie","przebierz się","przebierz sie"],
+    "sprawdź lodówkę":["sprawdź lodówkę","sprawdz lodowke","lodówka","lodowka","otwórz lodówkę","otworz lodowke","zajrzyj do lodówki","zajrzyj do lodowki"],
+    "wyjdź z mieszkania":["wyjdź z mieszkania","wyjdz z mieszkania","wyjdź","wyjdz"],
+    "czytaj pamiętnik":["czytaj pamiętnik","czytaj pamietnik","przeczytaj pamiętnik","przeczytaj pamietnik","otwórz pamiętnik","otworz pamietnik","otwórz dziennik","otworz dziennik","przeczytaj dziennik"],
+    "zejdź na dół":["zejdź na dół","zejdz na dol","zejdź","zejdz","idź na dół","idz na dol"],
+    "sprawdź skrzynkę":["sprawdź skrzynkę","sprawdz skrzynke","skrzynka","skrzynki"],
+    "nasłuchuj":["nasłuchuj","nastaw uszy","słuchaj","sluchaj"],
+    "uszczypnij się":["uszczypnij się","uszczypnij sie","to sen?","czy to sen","czy to był sen","czy to byl sen"],
+    "wciśnij przycisk światła":["wciśnij przycisk światła","wcisnij przycisk swiatla","wciśnij światło","wlacz swiatlo","włącz światło","światło","swiatlo","przycisk"],
+    "sprawdź wizjer":["sprawdź wizjer","sprawdz wizjer","zajrzyj przez wizjer","zajrzyj w wizjer"],
+    "obejrzyj ślady":["obejrzyj ślady","obejrzyj slady","sprawdź ślady","sprawdz slady","ślady","slady"],
+    "sprawdź tablicę":["sprawdź tablicę","sprawdz tablice","sprawdź ogłoszenia","sprawdz ogloszenia","tablica ogłoszeń","tablica ogloszen","ogłoszenia","ogloszenia"],
+    "powąchaj powietrze":["powąchaj powietrze","powachaj powietrze","powąchaj","powachaj","wciągnij powietrze","wciagnij powietrze"],
+    "zapukaj do 3":["zapukaj do 3","zapukaj do trujki","zastukaj do 3","pukaj do 3"],
+    "otwórz drzwi na chwilę":["otwórz drzwi na chwilę","otworz drzwi na chwile","otwórz drzwi","otworz drzwi"],
+    "otwórz ulotkę":[
+      "otwórz ulotkę","otworz ulotke","uruchom ulotkę","uruchom ulotke",
+      "wejdź w ulotkę","wejdz w ulotke","interakcja ulotki","zagraj w ulotkę","zagraj w ulotke"
+    ]
+  };
+
+  function canon(s){
+    const t = String(s).trim().toLowerCase();
+    for(const [k, forms] of Object.entries(ALIAS)){
+      if(forms.includes(t)) return k;
+    }
+    return t;
+  }
+
+  SM.reg("poranek",{
+    async enter(){
+      await say([
+        "Budzi cię światło wciskające się przez szczelinę w zasłonie. Leżysz w swoim łóżku ubrany w piżamę. Czy to był tylko sen?",
+        "Twoje myśli biegną jak szalone. Tak... to musiał być tylko sen.... Wtedy dostrzegasz kopertę, którą trzymasz w zaciśniętej pięści.",
+        "Zrywasz się i biegniesz do ubikacji. Ledwo zdążyłeś. Targają tobą torsje, kiedy gwałtownie wymiotujesz do muszli. Trwa to kilka minut, ale w końcu nudności przechodzą.",
+        "Metaliczny posmak nie chce jednak zniknąć. Musisz umyć zęby. W żołądku burczy — jesteś naprawdę głodny."
+      ]);
+      setCmds(["rozejrzyj się","umyj zęby","umyj się","ubierz się","sprawdź lodówkę","wyjdź z mieszkania","pomoc"]);
+      G.hungry = true;
+    },
+    handle(t){
+      const c = canon(t);
+
+      if(handleOpenDiary(c)) return true;
+
+      if(ALIAS["rozejrzyj się"].includes(t)){
+        typeText("Mieszkanie wygląda identycznie jak wczoraj — jakby czas naprawdę się zatrzymał.");
+        consumeCmd("rozejrzyj się");
+        return true;
+      }
+
+      // ZMIANA: Dodano odzyskiwanie poczytalności
+      if(c==="umyj się" && !G.washed){
+        G.washed=true;
+        const sanGain = Math.floor(Math.random() * 4) + 1;
+        if (window.Sanity) Sanity.add(sanGain, "poranek:umyj-sie");
+        say([
+           "Zimna woda stawia cię na nogi. Potrzebowałeś tego.",
+           `Czujesz, jak zmywa z ciebie część niepokoju. Odzyskujesz ${sanGain} pkt. poczytalności.`
+        ]);
+        consumeCmd("umyj się");
+        return true;
+      }
+
+      if(c==="umyj zęby" && !G.brushed){
+        G.brushed = true;
+        typeText("Szczotkujesz dokładnie zęby. Posmak rzygowin znika, a w głowie robi się jakby jaśniej. Burczenie w brzuchu przypomina, że przydałoby się zjeść śniadanie.");
+        consumeCmd("umyj zęby");
+        return true;
+      }
+      if(c==="ubierz się" && !G.dressed){
+        G.dressed = true;
+        typeText("Przebierasz się w wczorajsze ubrania. Zarzucasz kurtkę na ramiona. Zgarniasz portfel z paroma banknotami. Czeka cię dziś kilka trudnych decyzji, ale odsuwasz je na potem. Jesteś gotów.");
+        Inventory.add("portfel");
+        Inventory.add("klucze");
+        consumeCmd("ubierz się");
+        return true;
+      }
+      if(c==="sprawdź lodówkę"){
+        if(G.hungry){
+          typeText("Otwierasz lodówkę. Pustka. Nie ma tu nic do jedzenia.");
+          typeText("To przesądza sprawę — będziesz musiał pójść do pobliskiego baru.");
+        } else {
+          typeText("Zaglądasz do lodówki. Nie czujesz głodu, ale i tak świeci pustkami.");
+        }
+        consumeCmd("sprawdź lodówkę");
+        return true;
+      }
+
+      if(c==="wyjdź z mieszkania"){
+        if(!G.brushed || !G.dressed){
+          typeText(!G.brushed ? "Najpierw musisz umyć zęby, a potem się przebrać." : "Jeszcze się przebierz, potem wyjdź.");
+          return true;
+        }
+        G.leftHome = true;
+        consumeCmd("rozejrzyj się");
+        consumeCmd("wyjdź z mieszkania");
+        SM.go("klatka");
+        return true;
+      }
+
+      if(["pomoc","?","help"].includes(t)){
+        typeText("Dostępne: " + available.join(" / ") + (G.diaryUnlocked ? " / czytaj pamiętnik" : "") + ".");
+        return true;
+      }
+    }
+  });
+
+  SM.reg("klatka",{
+    async enter(){
+      setCmds([]);
+      await say([
+        "Zatrzaskujesz za sobą drzwi. Klatka wygląda normalnie. Ktoś umył podłogę. Czujesz wyraźnie jakiś mocny, chemiczny środek czyszczący.",
+        "„Jeśli to był sen... to...” — nie potrafisz sformułować klarownej myśli. Czujesz, że coś Ci umyka.",
+      ]);
+      addCmd("rozejrzyj się");
+    },
+
+    handle(t){
+      const c = canon(t);
+      
+      if(c === "rozejrzyj się") {
+        if(!available.includes("nasłuchuj")) {
+          typeText("Stoisz na półpiętrze. Podłoga lśni czystością, ale w rogach wciąż widać stare, ciemne plamy, których nie dało się doczyścić. Po lewej stronie jest tablica ogłoszeń, a obok drzwi do mieszkania numer 3. Poniżej, na parterze, widać matowe szkło drzwi wejściowych.");
+          setCmds([
+            "nasłuchuj","uszczypnij się",
+            "sprawdź tablicę","powąchaj powietrze",
+            "zapukaj do 3",
+            "zejdź na dół","pomoc"
+          ]);
+          addCmd("rozejrzyj się");
+          if (G.board?.read?.sekta) addCmd("otwórz ulotkę");
+        } else {
+          typeText("Klatka schodowa wygląda tak samo. Czysta podłoga, tablica ogłoszeń i drzwi sąsiada.");
+        }
+        consumeCmd("rozejrzyj się");
+        return true;
+      }
+      if (handleOpenDiary(c)) return true;
+
+      if(!G.g12){
+        G.g12 = { talking:false, met:false, rolled:false, rollResult:null, extraGiven:false, askedWeird:false, askedSaw:false };
+      }
+      if(!G.board){
+        G.board = {
+          seen:false,
+          read:{ remont:false, liczniki:false, sekta:false }
+        };
+      }
+      
+      function rollD6(){ return Math.floor(Math.random()*6)+1; }
+
+      if(c==="zapukaj do 3" && !G.g12.talking){
+        if(!G.knocked12){
+          typeText("Pukasz do drzwi 3. Łańcuch po drugiej stronie napina się z cichym brzdękiem. „Kto tam?”");
+          G.knocked12 = true;
+        } else {
+          typeText("Słychać kroki, łańcuch drży. „Szybko. Nie mam czasu.”");
+        }
+        G.g12.talking = true; 
+        G.g12.met = true;
+
+        consumeCmd("zapukaj do 3");
+        G.preConversationCmds = available.slice(); 
+
+        say([
+          "Mówisz spokojnie: „Dzień dobry… przepraszam, że panu przeszkadzam, ale czy nie widział pan czegoś niezwykłego wczorajszej nocy?”",
+          "Za drzwiami chwila ciszy.",
+          "„Z trzynastki? Aha. Już wiem.” — w głosie słychać wyraźną niechęć.",
+          "„Czego pan chce?”"
+        ], 250);
+
+        setCmds([
+          "czy działo się coś niezwykłego",
+          "co pan widział",
+          "do widzenia","pomoc"
+        ]);
+        
+        return true;
+      }
+
+      if(G.g12.talking){
+
+        if(c==="czy działo się coś niezwykłego"){
+          say([
+            "„Nic nie widziałem.” — ton chłodny.",
+            "„Tylko jakiś chuligan przewrócił kosz na dole. Sprzątaczka rano przyszła i sprzątała klatkę.”"
+          ]);
+          G.g12.askedWeird = true;
+          consumeCmd("czy działo się coś niezwykłego");
+
+          if(G.g12.askedWeird && G.g12.askedSaw && !G.g12.rolled){
+            addCmd("przekonaj go");
+            writeLine("<span class='accent'>Masz wrażenie, że da się go jeszcze urobić („przekonaj go”).</span>");
+          }
+          return true;
+        }
+
+        if(c==="co pan widział"){
+          say([
+            "„Powiedziałem: nic. Kosz został przewrócony, papier się walał, sprzątaczka ogarnęła. I tyle.”"
+          ]);
+          G.g12.askedSaw = true;
+          consumeCmd("co pan widział");
+
+          if(G.g12.askedWeird && G.g12.askedSaw && !G.g12.rolled){
+            addCmd("przekonaj go");
+            writeLine("<span class='accent'>Możesz spróbować go przekonać („przekonaj go”).</span>");
+          }
+          return true;
+        }
+
+        if(c==="przekonaj go"){
+          if(!(G.g12.askedWeird && G.g12.askedSaw)){
+            typeText("„Najpierw niech pan powie, o co w ogóle chodzi.” — brzmi zirytowany. (Zapytaj najpierw o obie rzeczy.)");
+            return true;
+          }
+          if(G.g12.rolled){
+            typeText("„Już wszystko powiedziałem.”"); 
+            return true;
+          }
+
+          G.g12.rolled = true;
+          const r = rollD6();
+          G.g12.rollResult = r;
+          writeLine(`<i>Rzut k6: ${r}</i>`);
+
+          if(r<=3){
+            say([
+              "„Nie będę o tym gadał. Proszę nie dzwonić po ludziach.”",
+              "Łańcuch brzęczy. Drzwi zamykają się z hukiem. Wygląda, że tutaj nic więcej się nie dowiesz."
+            ]);
+            if(window.Sanity) Sanity.add(-1, "poranek:sasiad-fail");
+          } else {
+            G.g12.extraGiven = true;
+            say([
+              "Chwila milczenia. Potem: „Dobrze. Ale to tak między nami.”",
+              "„Ktoś się kręcił w nocy na dole. Długi płaszcz, nie widziałem twarzy. Miał aparat — słyszałem migawkę.”",
+              "„Sprzątaczka z nim chyba gadała. Krótko, ale rozmawiali.”"
+            ]);
+            try{
+              localStorage.setItem('cw.articleFragment','Od lokatora z 3: nocą ktoś w długim płaszczu z aparatem, sprzątaczka z nim rozmawiała.');
+            }catch(e){}
+          }
+          consumeCmd("przekonaj go");
+          return true;
+        }
+
+        if(c==="do widzenia"){
+          typeText("„No. To tyle.” — łańcuch wraca na miejsce. Drzwi się zamykają.");
+          G.g12.talking = false;
+          available = G.preConversationCmds || [];
+          showHint();
+          return true;
+        }
+
+        if(["pomoc","?","help"].includes(t)){
+          const opts = [];
+          if(G.g12.askedWeird && G.g12.askedSaw && !G.g12.rolled) opts.push("przekonaj go");
+          opts.push("czy działo się coś niezwykłego","co pan widział","do widzenia");
+          typeText("Pytania: " + opts.join(" / ") + ".");
+          return true;
+        }
+
+        typeText("Za drzwiami słychać niecierpliwe cmoknięcie. „Krótko i rzeczowo.”");
+        return true;
+      }
+
+      if(c==="sprawdź tablicę"){
+        if(!G.board.seen){
+          typeText("Podchodzisz do tablicy. Trzy kartki przybite pinezkami chwieją się od przeciągu.");
+          typeText("1) Remont windy — kartka świeża, z pieczątką administracji.");
+          typeText("2) Wymiana liczników — wydruk ksero, drobny druk.");
+          typeText("3) Ulotka — Kościół Jedności Cienia: oko w trójkącie, czarny tusz i niezrozumiałe znaki.");
+          G.board.seen = true;
+          addCmd("czytaj remont windy");
+          addCmd("czytaj wymianę liczników");
+          addCmd("czytaj ulotkę");
+          if (G.board.read.sekta) addCmd("otwórz ulotkę");
+        } else {
+          typeText("Na tablicy: remont windy, wymiana liczników i dziwna ulotka z okiem w trójkącie.");
+          if(!G.board.read.remont)   addCmd("czytaj remont windy");
+          if(!G.board.read.liczniki) addCmd("czytaj wymianę liczników");
+          if(!G.board.read.sekta)    addCmd("czytaj ulotkę");
+          if(G.board.read.sekta)     addCmd("otwórz ulotkę");
+        }
+        consumeCmd("sprawdź tablicę"); return true;
+      }
+
+      if(c==="czytaj remont windy" && G.board.seen && !G.board.read.remont){
+        typeText("„REMONT WINDY — Od dnia 14 do 20 bieżącego miesiąca winda będzie wyłączona z użytku. Prosimy nie blokować drzwi szybów i nie używać przycisków na panelach. Za utrudnienia przepraszamy — Administracja.”");
+        G.board.read.remont = true; removeCmd("czytaj remont windy"); return true;
+      }
+
+      if(c==="czytaj wymianę liczników" && G.board.seen && !G.board.read.liczniki){
+        typeText("„WYMIANA LICZNIKÓW — W dniach 21–23 od godz. 8:00 technicy dokonają odczytu i wymiany wodomierzy. Prosimy udostępnić mieszkania lub zgłosić nieobecność pod numerem tel. 22 000 00 00.”");
+        G.board.read.liczniki = true; removeCmd("czytaj wymianę liczników"); return true;
+      }
+
+      if(c==="czytaj ulotkę" && G.board.seen && !G.board.read.sekta){
+        say([
+          "„ŚWIAT SIĘ KOŃCY – TYLKO WYBRANI PRZETRWAJĄ”",
+          "Czy naprawdę wierzysz w to, co widzą twoje oczy?",
+          "Bratnie dusze ostrzegają: żyjemy w fałszu, w matriksie tego zepsutego świata.",
+          "Kościół Jedności Cienia głosi: kto nie wyrzeknie się doczesnych więzów, zostanie połknięty przez Mrok Ostateczny.",
+          "Nie uciekaj. Tylko wyznanie Prawdy daje ocalenie."
+        ], 220).then(()=>{
+          if(window.Sanity) Sanity.add(-1, "poranek:ulotka-przeczytana");
+        });
+
+        const r = Math.floor(Math.random()*6)+1;
+        writeLine(`<i>Rzut k6: ${r}</i>`);
+        if(r>=4){
+          typeText("Na dole, dopisane innym pismem: „…pełzający chaos… jestem ostatni… opowiem słuchającej pustce…” — H. P. Lovecraft, 1920.");
+        }
+
+        const img = document.createElement("img");
+        img.src = "ulotka.png";
+        img.alt = "Ulotka sekty – pixelart";
+        img.style.maxWidth = "320px";
+        img.style.margin = "12px 0";
+        writeLine(img.outerHTML);
+
+        G.board.read.sekta = true;
+        removeCmd("czytaj ulotkę");
+        addCmd("otwórz ulotkę");
+        writeLine("<span class='accent'>Ulotka jakby pulsowała… możesz ją <b>otworzyć</b> (komenda: „otwórz ulotkę”).</span>");
+        try{ localStorage.setItem('cw.articleFragment','Ulotka: Kościół Jedności Cienia, „Posłaniec Chaosu”, Oko, ostrzeżenia.'); }catch(e){}
+        return true;
+      }
+
+      if(c==="nasłuchuj"){
+        if(!G.heardOnce){
+          typeText("Wstrzymujesz oddech, wytężasz słuch. Sprzed kamienicy dobiega stłumiony stukot — jakby ktoś przestawił wiadro. Może sprzątaczka coś zauważyła?");
+          G.heardOnce = true;
+        } else { typeText("Nic niezwykłego. Miasto budzi się do życia."); }
+        consumeCmd("nasłuchuj"); return true;
+      }
+
+      if(c==="uszczypnij się"){
+        if(!G.pinched){
+          typeText("Wolisz się upewnić, czy na pewno nie spisz. Boli. Skóra szybko czerwienieje. Niestety, wygląda na to że to jawa.");
+          if(window.Sanity) Sanity.add(-1, "poranek:uszczypniecie");
+          G.pinched = true;
+        } else { typeText("Powtarzasz test. Ten sam ból, ta sama smutna rzeczywistość."); }
+        consumeCmd("uszczypnij się"); return true;
+      }
+
+      if(c==="powąchaj powietrze"){
+        if(!G.sniffed){
+          typeText("Wciągasz powietrze nosem. Tło: wilgoć i pył. Na drugim planie — coś jak metal i przetarty ozon, jak po zwarciu.");
+          G.sniffed = true;
+        } else { typeText("Zapach bez zmian. Beton, wilgoć i ta metaliczna nuta."); }
+        consumeCmd("powąchaj powietrze"); return true;
+      }
+
+      if(c==="zejdź na dół"){
+        typeText("Schodzisz. Z matowego szkła parterowych drzwi sączy się mleczne światło.");
+        writeLine("<span class='accent'>Możesz przejść dalej.</span>");
+        nextBtn.disabled = false;
+        consumeCmd("zejdź na dół"); return true;
+      }
+
+      if(["pomoc","?","help"].includes(t)){
+        const list = available.slice();
+        if(G.board?.seen){
+          if(!G.board.read.remont)   list.push("czytaj remont windy");
+          if(!G.board.read.liczniki) list.push("czytaj wymianę liczników");
+          if(!G.board.read.sekta)    list.push("czytaj ulotkę");
+          if(G.board.read.sekta)     list.push("otwórz ulotkę");
+        }
+        if(G.diaryUnlocked) list.push("czytaj pamiętnik");
+        typeText("Dostępne: " + list.join(" / ") + "."); return true;
+      }
+
+      if (handleOpenFlyer(c)) { return true; }
+
+      return false;
+    }
+  });
+
+  speed.addEventListener('input', () => { speedIdx = +speed.value; speedLabel.textContent = labels[speedIdx]; });
+  speedLabel.textContent = labels[speedIdx];
+  fastBtn.addEventListener('click', () => { speedIdx = 0; speed.value = 0; speedLabel.textContent = labels[0]; });
+  restartBtn.addEventListener('click', () => { window.SAN?.reset?.(100); window.location.reload(); });
+  nextBtn.addEventListener('click', () => { window.location.href = NEXT_FILE; });
+
+  function handleInput(){
+    const raw = cmd.value.trim();
+    if(!raw) return;
+
+    promptEcho(raw);
+
+    const t = raw.toLowerCase();
+    const c = canon(t);
+
+    if (["ekwipunek","inwentarz"].includes(t)) {
+      const list = (window.Inventory && window.Inventory.list) ? window.Inventory.list() : [];
+      if (!list.length) {
+        typeText("Ekwipunek jest pusty.");
+        cmd.value=""; cmd.focus(); return;
+      }
+      typeText("Ekwipunek: " + list.join(", "));
+
+      const norm = s => String(s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]+/g,'').trim();
+      const inv = list.map(norm);
+      const hasDiary = inv.some(x =>
+        ["dziennik","stary dziennik","podejrzany dziennik","dziennik (zakrwawiony)",
+         "pamietnik","stary pamietnik","podejrzany pamietnik","pamietnik (zakrwawiony)"].includes(x)
+      );
+      if (hasDiary && !G.diaryUnlocked) { G.diaryUnlocked = true; addCmd("czytaj pamiętnik"); }
+      if (hasDiary) { writeLine("<span class='accent'>Pamiętnik zdaje się zmieniać… („czytaj pamiętnik”)</span>"); }
+
+      consumeCmd("ekwipunek");
+      cmd.value=""; cmd.focus();
+      return;
+    }
+
+    if (handleOpenDiary(c)) { cmd.value=""; cmd.focus(); return; }
+    if (handleOpenFlyer(c)) { cmd.value=""; cmd.focus(); return; }
+
+    const handled = SM.handle(c);
+    if(!handled){
+      typeText("Nie rozumiem. " + (available.length ? "Komendy: " + available.join(", ") + "." : ""));
+    }
+
+    cmd.value=""; cmd.focus();
+  }
+
+  send.addEventListener('click', handleInput);
+  cmd.addEventListener('keydown', e => { if(e.key==="Enter"){ e.preventDefault(); handleInput(); } });
+
+  SM.go("poranek");
+})();
+</script>
+</body>
+</html>

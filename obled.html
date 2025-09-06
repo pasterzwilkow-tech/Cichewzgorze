@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ciche Wzgórze — Obłęd</title>
+<style>
+  :root{
+    --bg:#06070a; --fg:#e6e6e6; --muted:#9aa0a6; --acc:#c7a26d;
+    --line: rgba(255,255,255,.08);
+    --panel: rgba(255,255,255,.04);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:radial-gradient(1200px 800px at 70% -10%, #11161e 0%, #07090c 60%, #05070a 100%);color:var(--fg);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",Ubuntu}
+  .wrap{max-width:980px;margin:0 auto;padding:16px 14px 60px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  h1{font-size:20px;margin:0;letter-spacing:.02em}
+  .pill{display:inline-flex;gap:6px;align-items:center;padding:.25em .6em;border:1px solid rgba(255,255,255,.12);border-radius:999px;font-size:12px;color:#cbd5e1}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.35);overflow:hidden}
+  .game{display:grid;grid-template-columns:1fr;gap:10px;padding:10px}
+  #stage{position:relative;display:grid;grid-template-columns:1fr 320px;gap:12px}
+  #mazeWrap{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:rgba(0,0,0,.25)}
+  #maze{display:block;width:100%;height:auto;image-rendering:pixelated}
+  #hud{display:flex;flex-direction:column;gap:10px}
+  .card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .row{display:flex;align-items:center;gap:10px}
+  .label{color:var(--muted);font-size:13px}
+  .bar{position:relative;height:12px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .bar > i{position:absolute;inset:0;transform-origin:left center;transform:scaleX(0);background:linear-gradient(90deg, #eab308, #ef4444)}
+  #time i{background:linear-gradient(90deg, #93c5fd, #38bdf8)}
+  #stageNo i{background:linear-gradient(90deg, #86efac, #22c55e)}
+  #screenFx{pointer-events:none;position:absolute;inset:0;z-index:5;opacity:0}
+  /* scanlines + vignette */
+  #screenFx::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom, rgba(255,255,255,.035) 0 2px, rgba(0,0,0,0) 2px 4px);mix-blend-mode:overlay;opacity:.0;transition:opacity .25s}
+  #screenFx::after{content:"";position:absolute;inset:-12%;background:radial-gradient(70% 70% at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,.7) 100%);opacity:.0;transition:opacity .25s}
+  .fx-on #screenFx::before{opacity:.18}
+  .fx-on #screenFx::after{opacity:.55}
+  /* flash (migawka) */
+  .flash{animation:flash .18s ease}
+  @keyframes flash{0%{background:rgba(255,255,255,.85)}100%{background:transparent}}
+  /* shake */
+  .shake{animation:shake .35s linear}
+  @keyframes shake{
+    0%,100%{transform:translate3d(0,0,0)}
+    20%{transform:translate3d(-1px,1px,0)}
+    40%{transform:translate3d(1px,-1px,0)}
+    60%{transform:translate3d(-1px,-1px,0)}
+    80%{transform:translate3d(1px,1px,0)}
+  }
+  /* chromatic aberration on high panic */
+  .aberrate{filter:drop-shadow(1px 0 rgba(255,0,0,.35)) drop-shadow(-1px 0 rgba(0,255,255,.3))}
+  /* whispers */
+  #whispers{position:absolute;inset:0;pointer-events:none;z-index:6}
+  .wh{position:absolute;color:#e5e7eb;font-style:italic;opacity:0;transform:translateY(6px);text-shadow:0 1px 2px rgba(0,0,0,.8);animation:wh 2.8s ease-out}
+  .wh.strong{font-weight:700;letter-spacing:.02em}
+  @keyframes wh{0%{opacity:0}10%{opacity:.85}80%{opacity:.9}100%{opacity:0;transform:translateY(-4px)}}
+  /* overlay */
+  #overlay{position:absolute;inset:0;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;z-index:10}
+  #overlay .box{max-width:620px;margin:0 12px;background:rgba(6,10,14,.9);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 10px 50px rgba(0,0,0,.5)}
+  .box h2{margin:.1em 0 .4em;font-size:18px}
+  .box p{margin:.35em 0;color:#d1d5db}
+  .box .keys{display:grid;grid-template-columns:repeat(5,auto);gap:6px;margin-top:8px}
+  .key{display:inline-grid;place-items:center;min-width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.05);font-weight:600}
+  .box .row{justify-content:space-between;margin-top:10px}
+  button{cursor:pointer;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--fg);padding:10px 14px;border-radius:10px}
+  button:hover{background:rgba(255,255,255,.12)}
+  .accent{color:var(--acc)}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Ciche Wzgórze — Obłęd</h1>
+      <span class="pill" id="sanBadge" title="Poczytalność (SAN)"><strong>SAN</strong>&nbsp;<span id="sanVal">—</span></span>
+    </header>
+
+    <section class="panel game">
+      <div id="stage">
+        <div id="mazeWrap">
+          <canvas id="maze" width="720" height="720" aria-label="Labirynt mentalny"></canvas>
+          <div id="screenFx"></div>
+          <div id="whispers"></div>
+          <div id="overlay">
+            <div class="box">
+              <h2>„To tylko korytarze. <span class="accent">Oddychaj.</span>”</h2>
+              <p>Musisz <b>przejść 3 etapy</b>. Zatrzymanie się <b>uspokaja</b> — panika wolno spada. Unikaj pulsujących pól (migawka).</p>
+              <p class="muted small">Każdy etap dodaje niespodzianki: odwrócone sterowanie, złudne ściany, zawężające się pole widzenia.</p>
+              <div class="keys">
+                <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
+                <span class="key">↕︎↔︎</span>
+                <span class="key">Spacja</span>
+              </div>
+              <div class="row">
+                <button id="startBtn">Start (Spacja)</button>
+                <button id="backBtn">Wróć</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside id="hud">
+          <div class="card">
+            <div class="row"><span class="label">Panika</span><span id="panicVal">0%</span></div>
+            <div class="bar"><i id="panicFill"></i></div>
+          </div>
+          <div class="card">
+            <div class="row"><span class="label">Czas</span><span id="timeVal">—</span></div>
+            <div class="bar" id="time"><i id="timeFill"></i></div>
+          </div>
+          <div class="card">
+            <div class="row"><span class="label">Etap</span><span id="stageVal">1 / 3</span></div>
+            <div class="bar" id="stageNo"><i id="stageFill"></i></div>
+          </div>
+          <div class="card small muted" id="tip">
+            Cel: dojdź do <b>wyjścia</b> (◈).<br>
+            Sterowanie: <b>WASD</b> / strzałki. <b>Zatrzymaj się</b>, by złapać oddech (panika <i>spada</i>).
+          </div>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+<script>
+(() => {
+  /* ==== Query params ==== */
+  const url = new URL(location.href);
+  const returnTo = url.searchParams.get("return") || "pursuit.html";
+  const timeParamBase = Math.max(10, Math.min(300, +(url.searchParams.get("t")||45))); // base seconds
+
+  /* ==== DOM ==== */
+  const canvas = document.getElementById('maze');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('mazeWrap');
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('startBtn');
+  const backBtn = document.getElementById('backBtn');
+  const panicFill = document.getElementById('panicFill');
+  const timeFill = document.getElementById('timeFill');
+  const panicVal = document.getElementById('panicVal');
+  const timeVal = document.getElementById('timeVal');
+  const screenFx = document.getElementById('screenFx');
+  const sanValEl = document.getElementById('sanVal');
+  const whLayer = document.getElementById('whispers');
+  const stageVal = document.getElementById('stageVal');
+  const stageFill = document.querySelector('#stageNo i');
+
+  /* ==== SAN bridge ==== */
+  const SAN_KEY = "cw.san.v1";
+  const clamp = (v) => Math.max(0, Math.min(100, v|0));
+  function loadSAN(){
+    try{
+      if (window.Sanity?.get) return clamp(window.Sanity.get());
+      const v = +localStorage.getItem(SAN_KEY);
+      return Number.isFinite(v) ? clamp(v) : 100;
+    }catch(e){ return 100; }
+  }
+  function saveSAN(v){
+    const c = clamp(v);
+    try{
+      if (window.Sanity?.set) window.Sanity.set(c);
+      else localStorage.setItem(SAN_KEY, String(c));
+    }catch(e){}
+    if (sanValEl) sanValEl.textContent = c + "/100";
+  }
+  function addSAN(delta){
+    saveSAN(loadSAN() + delta);
+  }
+  // init header
+  saveSAN(loadSAN());
+
+  /* ==== Stage / Maze state ==== */
+  const STAGES = 3;
+  let stage = 1;
+  let started = false, ended = false;
+  let W=13, H=13, CELL= Math.floor(canvas.width/13);
+  let grid = [];
+  const WALL = 1, PATH = 0;
+  let hazards = new Set();
+  let illusions = new Set(); // looks like wall, becomes path after bump
+  let exit = {x:11,y:11};
+  const player = {x:1,y:1};
+  let reversed = false;
+  let panic = 0;
+  let timeLeft = timeParamBase;
+  let lastTick = performance.now();
+  const keys = new Set();
+  let lastMoveTime = 0; // last successful step time (ms)
+  let lastKeyHeld = false; // whether any movement key is currently pressed
+
+  /* ==== Config based on stage ==== */
+  function configureStage(){
+    const size = 11 + stage*2; // 1:13, 2:15, 3:17
+    W = H = size;
+    CELL = Math.floor(Math.min(canvas.width, canvas.height)/W);
+    grid = Array.from({length:H}, ()=>Array(W).fill(WALL));
+    hazards = new Set();
+    illusions = new Set();
+    // time: a bit tighter later
+    timeLeft = Math.max(25, timeParamBase - (stage-1)*7);
+    panic = Math.max(0, panic*0.4); // carry a bit of stress but reduce
+    reversed = false;
+
+    carve(1,1);
+    // choose exit far corner reachable
+    exit = {x:W-2, y:H-2};
+    grid[exit.y][exit.x] = PATH;
+
+    // hazards ~ 20-28% of path cells (more later)
+    const pathCells = [];
+    for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++) if(grid[y][x]===PATH) pathCells.push([x,y]);
+    shuffle(pathCells);
+    const hazardRatio = 0.18 + (stage-1)*0.06;
+    const HAZ_CNT = Math.floor(pathCells.length*hazardRatio);
+    for(let i=0;i<HAZ_CNT;i++){ const [x,y]=pathCells[i]; hazards.add(y*W+x); }
+
+    // illusions: ~ 8-12% fake walls on stage 2+, cleared on bump
+    if (stage>=2){
+      const free = pathCells.slice(0, Math.floor(pathCells.length*0.5));
+      for (let i=0;i<Math.floor(pathCells.length*(stage===2?0.08:0.12)); i++){
+        const [x,y] = free[i];
+        illusions.add(y*W+x);
+      }
+    }
+
+    // reposition player
+    player.x = 1; player.y = 1;
+    lastMoveTime = performance.now();
+
+    // UI
+    stageVal.textContent = stage + " / " + STAGES;
+    stageFill.style.transform = `scaleX(${stage/STAGES})`;
+  }
+
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+  function carve(x,y){
+    grid[y][x] = PATH;
+    const dirs = shuffle([[1,0],[-1,0],[0,1],[0,-1]]);
+    for(const [dx,dy] of dirs){
+      const nx = x + dx*2, ny = y + dy*2;
+      if (nx>0 && nx<W-1 && ny>0 && ny<H-1 && grid[ny][nx]===WALL){
+        grid[y+dy][x+dx] = PATH;
+        carve(nx,ny);
+      }
+    }
+  }
+
+  /* ==== Drawing ==== */
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // background
+    ctx.fillStyle = "#0b0e13";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // field of view radius shrink with panic on stage 3
+    const useFov = (stage>=3);
+    let fovR = (CELL* (3 + W*0.35)) * (1 - Math.min(0.6, panic/200)); // shrink with panic
+
+    // grid
+    for(let y=0;y<H;y++){
+      for(let x=0;x<W;x++){
+        const px = x*CELL, py = y*CELL;
+        // decide if rendered as wall
+        let isWall = (grid[y][x]===WALL);
+        if (!isWall && illusions.has(y*W+x)) isWall = true; // fake wall
+
+        if (isWall){
+          ctx.fillStyle = "#1b2432";
+          ctx.fillRect(px,py,CELL,CELL);
+        } else {
+          // base floor
+          ctx.fillStyle = "#0f141c";
+          ctx.fillRect(px,py,CELL,CELL);
+          // slightly noisy texture
+          ctx.fillStyle = "rgba(255,255,255,.02)";
+          for(let i=0;i<4;i++){ ctx.fillRect(px+Math.random()*CELL, py+Math.random()*CELL, 1, 1); }
+          // hazard pulse
+          const id = y*W+x;
+          if (hazards.has(id)){
+            const t = performance.now()/600;
+            const p = (Math.sin(t*2)+1)/2; // 0..1
+            ctx.fillStyle = `rgba(231,76,60,${0.08 + p*0.12})`;
+            ctx.fillRect(px,py,CELL,CELL);
+          }
+        }
+      }
+    }
+    // exit
+    ctx.fillStyle = "#c7a26d";
+    const ex = exit.x*CELL, ey = exit.y*CELL;
+    const m = CELL*0.25;
+    ctx.fillRect(ex+m, ey+m, CELL-2*m, CELL-2*m);
+    ctx.strokeStyle = "rgba(255,255,255,.25)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(ex+m, ey+m, CELL-2*m, CELL-2*m);
+    ctx.fillStyle = "rgba(255,255,255,.82)";
+    ctx.font = `${Math.floor(CELL*0.5)}px ui-sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("◈", ex+CELL/2, ey+CELL/2);
+
+    // player
+    const px = player.x*CELL, py = player.y*CELL;
+    ctx.fillStyle = "#e6e6e6";
+    ctx.beginPath();
+    ctx.arc(px+CELL/2, py+CELL/2, CELL*0.26, 0, Math.PI*2);
+    ctx.fill();
+    // facing dot
+    ctx.fillStyle = "#11161e";
+    ctx.beginPath();
+    ctx.arc(px+CELL/2, py+CELL/2, CELL*0.08, 0, Math.PI*2);
+    ctx.fill();
+
+    // field of view vignette
+    if (useFov){
+      const cx = px+CELL/2, cy = py+CELL/2;
+      const g = ctx.createRadialGradient(cx, cy, Math.max(30,fovR*0.6), cx, cy, Math.max(60,fovR));
+      g.addColorStop(0, "rgba(0,0,0,0)");
+      g.addColorStop(1, "rgba(0,0,0,0.92)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+  }
+
+  /* ==== HUD ==== */
+  function setBar(el,val){
+    el.style.transform = `scaleX(${Math.max(0,Math.min(1,val))})`;
+  }
+  function updateHUD(){
+    setBar(panicFill, panic/100);
+    panicVal.textContent = Math.round(panic) + "%";
+    setBar(timeFill, Math.max(0,timeLeft) / timeParamBase);
+    timeVal.textContent = Math.ceil(Math.max(0,timeLeft)) + "s";
+    // screen FX levels
+    if (panic >= 20) document.body.classList.add('fx-on'); else document.body.classList.remove('fx-on');
+    screenFx.classList.toggle('aberrate', panic>=60);
+  }
+
+  /* ==== Effects ==== */
+  function flash(){ screenFx.classList.add('flash'); setTimeout(()=>screenFx.classList.remove('flash'), 180); }
+  function shake(){ wrap.classList.add('shake'); setTimeout(()=>wrap.classList.remove('shake'), 350); }
+  function whisper(txt,strong=false){
+    const s = document.createElement('div');
+    s.className = 'wh' + (strong?' strong':'');
+    s.textContent = txt;
+    s.style.left = (10 + Math.random()*80) + '%';
+    s.style.top = (10 + Math.random()*80) + '%';
+    whLayer.appendChild(s);
+    setTimeout(()=>s.remove(), 2600);
+  }
+
+  /* ==== Input ==== */
+  window.addEventListener('keydown', e => {
+    if (e.code === "Space"){ if (!started && !ended){ start(); e.preventDefault(); } return; }
+    if (!started || ended) return;
+    if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD"].includes(e.code)){
+      e.preventDefault();
+      keys.add(e.code);
+      lastKeyHeld = true;
+      moveOnce(e.code);
+    }
+  });
+  window.addEventListener('keyup', e => {
+    keys.delete(e.code);
+    if (![...keys].some(k => ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD"].includes(k))){
+      lastKeyHeld = false;
+    }
+  });
+  startBtn.addEventListener('click', ()=> !started && !ended && start());
+  backBtn.addEventListener('click', ()=> location.href = returnTo);
+
+  function dirFromKey(code){
+    let dx=0, dy=0;
+    if (code==="ArrowUp"||code==="KeyW") dy=-1;
+    if (code==="ArrowDown"||code==="KeyS") dy=1;
+    if (code==="ArrowLeft"||code==="KeyA") dx=-1;
+    if (code==="ArrowRight"||code==="KeyD") dx=1;
+    if (reversed){ dx = -dx; dy = -dy; }
+    return [dx,dy];
+  }
+
+  function moveOnce(code){
+    const [dx,dy] = dirFromKey(code);
+    const nx = player.x+dx, ny = player.y+dy;
+    // illusion wall -> break illusion on bump
+    if (nx>=0 && ny>=0 && nx<W && ny<H && illusions.has(ny*W+nx)){
+      // first bump breaks illusion but still blocks this tick
+      illusions.delete(ny*W+nx);
+      panic = Math.min(100, panic + 1.2);
+      shake();
+      whisper("…to nie ściana…", false);
+      return;
+    }
+    if (nx<0||ny<0||nx>=W||ny>=H) return;
+    if (grid[ny][nx]===WALL) { // bump -> small panic
+      panic = Math.min(100, panic + 1.2);
+      shake();
+      return;
+    }
+    // move
+    player.x = nx; player.y = ny;
+    lastMoveTime = performance.now();
+    const id = ny*W+nx;
+    if (hazards.has(id)){
+      panic = Math.min(100, panic + 7 + Math.random()*3);
+      flash(); shake();
+      if (Math.random()<0.35) whisper("…migawka…");
+    } else {
+      // stepping on safe tile calms a tad
+      panic = Math.max(0, panic - 0.35);
+    }
+    // random reversed control pulses on stages 2+
+    if (stage>=2 && Math.random()<0.08){
+      reversed = true;
+      whisper("STEROWANIE ODWRÓCONE", true);
+      setTimeout(()=>{ reversed=false; }, 2000 + Math.random()*1200);
+    }
+    // near exit faint flash
+    if (Math.abs(player.x-exit.x)+Math.abs(player.y-exit.y)===1 && Math.random()<0.2){ flash(); }
+    // win?
+    if (player.x===exit.x && player.y===exit.y){
+      if (stage < STAGES){
+        stage++;
+        overlayNextStage();
+      } else {
+        win();
+      }
+    }
+  }
+
+  /* ==== Loop ==== */
+  const CALM_RATE = 4.0; // % per second when stationary
+  function loop(ts){
+    if (!started || ended) return;
+    const dt = Math.max(0, Math.min(0.1, (ts - lastTick)/1000));
+    lastTick = ts;
+    timeLeft -= dt;
+
+    // passive panic rise near timeout
+    if (timeLeft < timeParamBase*0.33) panic = Math.min(100, panic + 0.05);
+    if (timeLeft < timeParamBase*0.15) panic = Math.min(100, panic + 0.12);
+
+    // ===== Calming while stationary =====
+    // if no movement keys are held for >0.5s, reduce panic gradually
+    if (!lastKeyHeld && (performance.now() - lastMoveTime) > 500){
+      // stronger calming at higher panic (but always some)
+      const k = 1 + (panic/150);
+      panic = Math.max(0, panic - CALM_RATE * k * dt);
+    }
+
+    // standing on hazard slowly increases panic
+    const curId = player.y*W+player.x;
+    if (hazards.has(curId)){
+      panic = Math.min(100, panic + 0.6*dt);
+    }
+
+    // extra flashes if little time
+    if (timeLeft < timeParamBase*0.18 && Math.random()<0.04){ flash(); }
+
+    // random whispers scale with panic
+    if (Math.random() < (0.01 + panic/900)){
+      const texts = ["…ktoś stoi za tobą…","…nie mrugaj…","…oddychaj…","…po co wracać…","…to nie jest wyjście…","…słyszysz mnie…"];
+      whisper(texts[Math.floor(Math.random()*texts.length)], Math.random()<0.25);
+    }
+
+    draw(); updateHUD();
+    if (timeLeft<=0 || panic>=100){
+      lose();
+      return;
+    }
+    requestAnimationFrame(loop);
+  }
+
+  /* ==== Start/End ==== */
+  function start(){
+    overlay.style.display = "none";
+    started = true; ended = false;
+    configureStage();
+    lastTick = performance.now();
+    requestAnimationFrame(loop);
+  }
+  function endCommon(msg, good){
+    ended = true; started = false;
+    draw(); updateHUD();
+    overlay.style.display = "flex";
+    overlay.querySelector('.box').innerHTML = `
+      <h2>${good ? "Przetrwałeś napad." : "Obłęd przejął kontrolę."}</h2>
+      <p>${msg}</p>
+      <div class="row">
+        <button id="againBtn">Jeszcze raz</button>
+        <button id="retBtn">Wróć</button>
+      </div>
+      <p class="small muted">${good ? "Udało ci się zachować zimną krew — +1k10 SAN." : "Cios w poczytalność został zapisany."}</p>
+    `;
+    overlay.querySelector('#againBtn').addEventListener('click', ()=>location.reload());
+    overlay.querySelector('#retBtn').addEventListener('click', ()=>location.href = returnTo);
+  }
+  function rollK4(){ return Math.floor(Math.random()*4)+1; }
+  function rollK10(){ return Math.floor(Math.random()*10)+1; }
+
+  function overlayNextStage(){
+    ended = true; started = false;
+    draw(); updateHUD();
+    overlay.style.display = "flex";
+    const notes = [
+      "Mgła gęstnieje. Korytarze się zmieniają.",
+      "Ściany pęcznieją jak żywe. Słyszysz klik migawki."
+    ];
+    overlay.querySelector('.box').innerHTML = `
+      <h2>Etap ${stage} z ${STAGES}</h2>
+      <p>${notes[(stage-2)%notes.length]||""}</p>
+      <div class="row">
+        <button id="contBtn">Dalej</button>
+      </div>
+      <p class="small muted">Uważaj na <b>złudne ściany</b> i <b>odwrócone sterowanie</b>.</p>
+    `;
+    overlay.querySelector('#contBtn').addEventListener('click', ()=>{
+      overlay.style.display = "none";
+      ended=false; started=true;
+      configureStage();
+      lastTick = performance.now();
+      requestAnimationFrame(loop);
+    });
+  }
+
+  function win(){
+    const k10 = rollK10();
+    addSAN(+k10);
+    endCommon(`Przechodzisz przez ostatnie wyjście. Światło jak z migawki rozprasza mgłę. <br><b>Poczytalność +${k10}</b>.`, true);
+    flash(); flash();
+  }
+  function lose(){
+    const k4 = rollK4();
+    addSAN(-k4);
+    endCommon(`Świat zwęża się do igielnego ucha. Ekran zalewa biały błysk. Tracisz przytomność. <br><b>Poczytalność -${k4}</b>.`, false);
+    flash(); flash();
+  }
+
+  /* ==== First draw ==== */
+  configureStage();
+  draw(); updateHUD();
+
+  /* ==== Visual polish on mount ==== */
+  setTimeout(()=>document.body.classList.add('fx-on'), 200);
+})();
+</script>
+</body>
+</html>

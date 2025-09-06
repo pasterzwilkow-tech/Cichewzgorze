@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ciche Wzgórze — Ulica</title>
+<style>
+  :root{ --bg:#07090c; --fg:#e6e6e6; --muted:#9aa0a6; --accent:#c7a26d; --panel:rgba(255,255,255,.04); --line:rgba(255,255,255,.08); }
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0; background:radial-gradient(1200px 800px at 70% -10%, #11161e 0%, #07090c 60%, #05070a 100%); color:var(--fg); font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",Ubuntu,Cantarell}
+  .wrap{max-width:920px; margin:0 auto; padding:24px 16px 120px}
+  header{display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:8px}
+  h1{font-size:20px; margin:0; letter-spacing:.02em; color:#f1f1f1}
+  .pill{display:inline-flex; gap:6px; align-items:center; padding:.25em .6em; border:1px solid rgba(255,255,255,.12); border-radius:999px; font-size:12px; color:#cbd5e1; margin-right:6px}
+  .pill strong{color:#fff; font-weight:700}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.35); display:flex; flex-direction:column;}
+  #log{height:60vh; min-height:340px; overflow:auto; padding:18px 18px 6px; scrollbar-width:thin}
+  #log::-webkit-scrollbar{height:8px; width:8px}
+  #log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1); border-radius:20px}
+  .line{margin:0 0 14px; opacity:.96}
+  .type{border-right:2px solid rgba(255,255,255,.65); animation:caret .85s steps(1) infinite}
+  @keyframes caret{50%{border-color:transparent}}
+  .toolbar{display:flex; gap:10px; align-items:center; color:var(--muted); font-size:14px; padding:10px 12px; border-top:1px solid var(--line); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02))}
+  input[type=range]{accent-color:#b5c4ff}
+  button{padding:10px 14px; border-radius:10px; border:1px solid var(--line); background:rgba(255,255,255,.06); color:var(--fg); cursor:pointer}
+  button:hover{background:rgba(255,255,255,.1)}
+  .sep{opacity:.35; margin:0 .25em}
+  #inputbar{display:flex; gap:10px; padding:10px; border-top:1px solid var(--line); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02))}
+  #cmd{flex:1; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:rgba(3,6,9,.6); color:var(--fg); outline:none}
+  #cmd::placeholder{color:#8892a6}
+  .note{color:var(--muted); font-size:13px}
+  .accent{color:var(--accent); font-weight:600}
+  
+  .overlay-diary { position: fixed; inset: 0; display: none; place-items: center; background: rgba(0,0,0,.6); backdrop-filter: blur(2px); z-index: 9999; }
+  .overlay-diary.open { display: grid; }
+  .overlay-diary .box { width: min(400px, 95vw); height: min(780px, 85vh); background: transparent; border:none; }
+  .overlay-diary .box header { display:none; } /* Ukrywamy domyślny header */
+  .overlay-diary iframe { position:absolute; inset:0; border:0; width:100%; height:100%; }
+
+  /* === SANITY FX (CSS) === */
+  #sanFx{position:fixed; inset:0; pointer-events:none; z-index:50}
+  #sanFx .vig{position:absolute; inset:-10%; background: radial-gradient(70% 70% at 50% 50%, transparent 45%, rgba(0,0,0,.65) 100%); opacity:0; transition:opacity .35s ease}
+  #sanFx .scan{position:absolute; inset:0; background:repeating-linear-gradient(to bottom, rgba(255,255,255,.035) 0 2px, rgba(0,0,0,0) 2px 4px); mix-blend-mode:overlay; opacity:0; transition:opacity .35s ease}
+  body.san-t2 .panel{filter:saturate(.9) contrast(1.03)}
+  body.san-t3 .panel{filter:hue-rotate(-6deg) saturate(.85) contrast(1.06)}
+  body.san-t4 .panel{filter:hue-rotate(-12deg) saturate(.75) contrast(1.1) blur(.3px)}
+  body.san-t5 .panel{filter:hue-rotate(-18deg) saturate(.6) contrast(1.18) blur(.6px)}
+  body.san-t3 #sanFx .vig{opacity:.28}
+  body.san-t4 #sanFx .vig{opacity:.5}
+  body.san-t5 #sanFx .vig{opacity:.72}
+  body.san-t4 #sanFx .scan{opacity:.15}
+  body.san-t5 #sanFx .scan{opacity:.28}
+  @keyframes sanJitter { 0%,97%,100%{transform:translate3d(0,0,0)} 98%{transform:translate3d(.6px,-.6px,0)} 99%{transform:translate3d(-.7px,.5px,0)} }
+  body.san-t4 .panel, body.san-t5 .panel { animation:sanJitter 7.5s infinite }
+  body.san-t5 #log .line{ text-shadow:1px 0 rgba(255,0,0,.28), -1px 0 rgba(0,255,255,.22); }
+</style>
+</head>
+<body>
+  <div id="sanFx" aria-hidden="true">
+    <div class="vig"></div>
+    <div class="scan"></div>
+  </div>
+
+  <div class="wrap">
+    <header>
+      <h1>Ciche Wzgórze — Ulica</h1>
+      <div>
+        <span class="pill" id="sanBadge" title="Poczytalność (SAN)"><strong>SAN</strong>&nbsp;<span id="sanVal">—</span></span>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div id="log" aria-live="polite"></div>
+      <div class="toolbar">
+        <button id="fast">Przyspiesz</button>
+        <span class="sep">|</span>
+        <span>Tempo</span>
+        <input type="range" id="speed" min="0" max="3" step="1" value="3" />
+        <span id="speedLabel">powoli</span>
+        <span class="sep">|</span>
+        <button id="restart">Restart</button>
+        <button id="next" disabled>Następny plik</button>
+      </div>
+      <div id="inputbar">
+        <input id="cmd" autocomplete="off" spellcheck="false" placeholder="wpisz komendę…" />
+        <button id="send">Wyślij</button>
+      </div>
+    </section>
+    <p class="note" id="hint" style="display:none"></p>
+  </div>
+  
+  <div id="phoneOverlay" class="overlay-diary" aria-hidden="true">
+    <div class="box">
+      <iframe id="phoneFrame" src="about:blank" title="Minigra Telefon"></iframe>
+    </div>
+  </div>
+
+<script src="sanity.js"></script>
+<script>
+/* === SAN PERSIST (localStorage) === */
+(() => {
+  const SAN_KEY = "cw.san.v1";
+  const clamp = v => Math.max(0, Math.min(100, v|0));
+  const loadSAN = () => {
+    const raw = localStorage.getItem(SAN_KEY);
+    const n = +raw;
+    return Number.isFinite(n) ? clamp(n) : 100;
+  };
+  const saveSAN = v => { try{ localStorage.setItem(SAN_KEY, String(clamp(v))); }catch(e){} };
+
+  window.SAN = {
+    key: SAN_KEY,
+    load: loadSAN,
+    save: saveSAN,
+    reset(v=100){
+      try{ localStorage.removeItem(SAN_KEY); }catch(e){}
+      saveSAN(v);
+      if (window.Sanity?.set) Sanity.set(v);
+    }
+  };
+
+  window.addEventListener("storage", (e) => {
+    if (e.key === SAN_KEY && e.newValue != null && window.Sanity?.set) {
+      const next = clamp(+e.newValue);
+      if (Number.isFinite(next) && window.Sanity?.get && Sanity.get() !== next) {
+        Sanity.set(next);
+      }
+    }
+  });
+})();
+</script>
+<script src="inventory.js"></script>
+
+<script>
+(() => {
+  const NEXT_FILE = "gas_station.html";
+
+  const SPEEDS = [0, 2, 10, 60];
+  let speedIdx = 3;
+  const labels = ["natychmiast","szybko","standard","powoli"];
+
+  const log = document.getElementById('log');
+  const speed = document.getElementById('speed');
+  const speedLabel = document.getElementById('speedLabel');
+  const fastBtn = document.getElementById('fast');
+  const restartBtn = document.getElementById('restart');
+  const nextBtn = document.getElementById('next');
+  const cmd = document.getElementById('cmd');
+  const send = document.getElementById('send');
+  const hint = document.getElementById('hint');
+
+  let queue = Promise.resolve();
+  let sanTypeFactor = 1;
+  function scrollBottom(){ log.scrollTop = log.scrollHeight; }
+  function writeLine(html=""){ const d=document.createElement('div'); d.className='line'; d.innerHTML=html; log.appendChild(d); scrollBottom(); return d; }
+  function escapeHtml(s){ return String(s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+  function promptEcho(t){ writeLine("&gt; " + escapeHtml(t)); }
+
+  function typeText(text){
+    queue = queue.then(async () => {
+      const d = writeLine("");
+      const s = document.createElement('span'); s.className="type"; d.appendChild(s);
+      const ms = Math.max(0, Math.round(SPEEDS[speedIdx] * sanTypeFactor));
+      const str = String(text ?? "");
+      if(ms<=0){ s.textContent=str; s.classList.remove('type'); return; }
+      for(const ch of str){ s.textContent += ch; await new Promise(r=>setTimeout(r, ms)); scrollBottom(); }
+      s.classList.remove('type');
+    });
+    return queue;
+  }
+  async function say(lines, gap=350){ for(const l of lines){ await typeText(l); if(gap) await new Promise(r=>setTimeout(r,gap)); } }
+
+  /* ===== SANITY bootstrap ===== */
+  const sanValEl = document.getElementById("sanVal");
+  function syncSan(v){ if (sanValEl) sanValEl.textContent = `${v}/100`; applySanityTier(tierFor(v)); }
+  function tierFor(v){ return v>=80?1 : v>=60?2 : v>=40?3 : v>=20?4 : 5; }
+  function applySanityTier(t){ document.body.className = 'san-t'+t; sanTypeFactor = [1.0, 0.95, 0.9, 0.85, 0.8][t-1] || 1; }
+  if (window.Sanity) { Sanity.init({ start: window.SAN.load(), mount: ".toolbar" }); Sanity.subscribe((v)=>{ window.SAN.save(v); syncSan(v); }); syncSan(Sanity.get());
+  } else { syncSan(window.SAN.load()); }
+
+  let available = [];
+  function setCmds(arr){ available = arr.slice(); if(!available.includes("ekwipunek")) available.push("ekwipunek"); showHint(); }
+  function addCmd(c){ if(!available.includes(c)){ available.push(c); if(!available.includes("ekwipunek")) available.push("ekwipunek"); showHint(); } }
+  function removeCmd(c){ const i = available.indexOf(c); if(i>-1){ available.splice(i,1); showHint(); } }
+  function showHint(){ hint.style.display="block"; hint.innerHTML="Dostępne: " + (available.length ? available.map(c=>"<b>"+escapeHtml(c)+"</b>").join(", ") : "—") + "."; }
+ 
+  /* === Phone Minigame Integration === */
+  function openPhoneGame() {
+    const ov = document.getElementById('phoneOverlay');
+    const fr = document.getElementById('phoneFrame');
+    fr.src = 'phone.html';
+    ov.classList.add('open');
+  }
+  function closePhoneGame() {
+    const ov = document.getElementById('phoneOverlay');
+    const fr = document.getElementById('phoneFrame');
+    ov.classList.remove('open');
+    fr.src = 'about:blank';
+  }
+  window.addEventListener('message', (e) => {
+    if (e.data?.type === 'sanLoss') {
+      if (window.Sanity) Sanity.add(-e.data.amount, e.data.reason);
+    }
+    if (e.data === 'phoneMinigameFinished') {
+      closePhoneGame();
+      SM.go("zebranie_grupy");
+    }
+  });
+
+  const SM = {
+    current: null, scenes: {},
+    reg(n, o){ this.scenes[n] = o; },
+    async go(n){ if(this.current && this.scenes[this.current]?.exit){ this.scenes[this.current].exit(); } this.current = n; if(this.scenes[n]?.enter){ await this.scenes[n].enter(); } },
+    handle(t){ const S = this.scenes[this.current]; if(!S || !S.handle) return false; return !!S.handle(t); }
+  };
+
+  const G = { bookChecked: false };
+
+  SM.reg("start", {
+    async enter() {
+      await say([
+        "Wychodzisz na zewnątrz. Chłodne, wilgotne powietrze uderza w twoją twarz.",
+        "Słyszysz ciche pobrzękiwanie metalu – to sprzątaczka, zbiera śmieci przy przewróconym koszu."
+      ]);
+      setCmds(["podejdź do sprzątaczki", "rozejrzyj się"]);
+    },
+    handle(t) {
+      if (t === "podejdź do sprzątaczki") { SM.go("rozmowa_sprzataczka"); return true; }
+      if (t === "rozejrzyj się") { typeText("Ulica jest pusta, spowita w lekkiej mgle. Poza sprzątaczką nie widać żywej duszy."); removeCmd(t); return true; }
+      return false;
+    }
+  });
+
+// ==========================================================
+// NOWY, POPRAWIONY I JEDYNY DIALOG ZE SPRZĄTACZKĄ
+// ==========================================================
+SM.reg("rozmowa_sprzataczka", {
+    async enter() {
+        await say([
+            "Podchodzisz do starszej kobiety, która z westchnieniem zbiera śmieci wokół przewróconego na bok, metalowego kosza.",
+            "Na twój widok prostuje się i patrzy nieufnie.",
+            "\"Znowu ktoś się tu kręci... Czego pan szuka? Jeśli to pan wczoraj narobił tego bałaganu, to mógłby pan chociaż pomóc.\""
+        ]);
+        setCmds(["pomóż posprzątać", "podejdź spokojnie", "pytaj wprost o fotografa"]);
+    },
+    handle(t) {
+        if (t === "pomóż posprzątać") { SM.go("rozmowa_empatia"); return true; }
+        if (t === "podejdź spokojnie") { SM.go("rozmowa_neutralna"); return true; }
+        if (t === "pytaj wprost o fotografa") { SM.go("rozmowa_agresywna"); return true; }
+        return false;
+    }
+});
+
+SM.reg("rozmowa_agresywna", {
+    async enter() {
+        await say([
+            "\"Nie interesuje mnie kosz. Podobno rozmawiała pani wczoraj z osobnikiem w długim płaszczu. Muszę wiedzieć, gdzie poszedł.\"",
+            "Kobieta marszczy brwi, a jej nieufność zamienia się w jawną niechęć. Opiera się o trzonek miotły.",
+            "\"A kim pan jest, policja? Nie pański interes, kogo tu widziałam. Daj mi pan spokój.\"",
+            "Kobieta celowo cię ignoruje, skupiając się na pracy. Nic więcej się od niej nie dowiesz."
+        ]);
+        setCmds([]);
+        await new Promise(r => setTimeout(r, 1500));
+        SM.go("szok_i_glod");
+    }
+});
+
+SM.reg("rozmowa_neutralna", {
+    async enter() {
+        await say([
+            "\"Dzień dobry. Chciałem tylko zapytać o mężczyznę w płaszczu, z aparatem, który był tu wczoraj.\"",
+            "Kobieta wzrusza ramionami, jej ton jest szorstki.",
+            "\"Był tu taki jeden. Wyglądał, jakby zobaczył ducha. Przewrócił ten kosz i uciekł w stronę starego dworca. Dziwaków tu nie brakuje.\"",
+            "Czujesz, że nie chce dalej rozmawiać. Odwraca się do ciebie plecami."
+        ]);
+        setCmds([]);
+        await new Promise(r => setTimeout(r, 1500));
+        SM.go("szok_i_glod");
+    }
+});
+
+SM.reg("rozmowa_empatia", {
+    async enter() {
+        await say([
+            "\"Dzień dobry. Proszę pozwolić, pomogę pani.\" Schylasz się i zaczynasz zbierać porozrzucane papiery.",
+            "Kobieta jest zaskoczona. Jej surowa mina łagodnieje.",
+            "\"Dziękuję, młody człowieku. Rzadko kto teraz pomoże. A bałagan... ach, był tu wczoraj taki jeden dziwny mężczyzna. W płaszczu, z aparatem.\"",
+            "\"Miał puste oczy. Jakby patrzył na coś, czego tu wcale nie ma.\""
+        ]);
+        setCmds(["coś jeszcze się stało?", "dokąd pobiegł?"]);
+    },
+    handle(t) {
+        if (t === "coś jeszcze się stało?") { SM.go("rozmowa_empatia_klucz"); return true; }
+        if (t === "dokąd pobiegł?") { SM.go("rozmowa_empatia_dworzec"); return true; }
+        return false;
+    }
+});
+
+SM.reg("rozmowa_empatia_klucz", {
+    async enter() {
+        await say([
+           "Kobieta waha się przez chwilę, po czym sięga do kieszeni fartucha.",
+           "\"Nie wiem, czy to jego... ale znalazłam to dziś rano, jak sprzątałam ten bałagan. Leżało tuż obok kosza.\"",
+           "Jej dłoń drży, gdy podaje ci mały, zardzewiały klucz.",
+           "\"Złe przeczucia mam co do tego. Weź to pan. Proszę. Ja tego nie chcę.\""
+        ]);
+        if (window.Inventory) Inventory.add("zardewiały klucz");
+        if (window.Sanity) Sanity.add(-2, "street:cursed_key");
+        setCmds([]);
+        await new Promise(r => setTimeout(r, 1500));
+        SM.go("szok_i_glod");
+    }
+});
+
+SM.reg("rozmowa_empatia_dworzec", {
+    async enter() {
+        await say([
+           "\"Pobiegł w stronę starego dworca. Jakby go coś goniło. Tyle widziałam.\"",
+           "Kobieta kończy rozmowę i wraca do pracy. Czujesz jednak, że coś zachowała dla siebie."
+        ]);
+        setCmds([]);
+        await new Promise(r => setTimeout(r, 1500));
+        SM.go("szok_i_glod");
+    }
+});
+// ==========================================================
+// KONIEC NOWEGO DIALOGU
+// ==========================================================
+
+  SM.reg("szok_i_glod", {
+    async enter() {
+      await say([
+        "Słowa sprzątaczki uderzają w ciebie z całą mocą. To nie był sen.",
+        "Nogi same niosą cię przed siebie, bez celu. Burczenie w żołądku przypomina ci o głodzie.",
+        "W oddali widzisz szyld baru 'Ostatnia Szansa'. Może tam, przy jedzeniu, zdołasz zebrać myśli."
+      ]);
+      setCmds(["wejdź do baru"]);
+    },
+    handle(t) {
+      if (t === "wejdź do baru") { SM.go("bar"); return true; }
+      return false;
+    }
+  });
+ 
+  SM.reg("bar", {
+      async enter() {
+          await say([
+              "Wnętrze baru jest prawie puste. Siadasz przy ladzie.",
+              "Barman bez słowa stawia przed tobą talerz z gorącą jajecznicą i kubek czarnej kawy."
+          ]);
+          setCmds(["zjedz posiłek"]);
+      },
+      handle(t) {
+          if(t === "zjedz posiłek"){
+              removeCmd(t);
+              say([
+                  "Mechanicznie przeżuwasz jedzenie. Ciepło posiłku powoli rozchodzi się po ciele, ale nie przynosi ulgi.",
+                  "Wręcz przeciwnie – w tej chwili normalności, brutalna prawda uderza cię z pełną siłą.",
+                  "List. Sen. Fotograf. To wszystko dzieje się naprawdę.",
+                  "Musisz zadzwonić do reszty. Natychmiast."
+              ]).then(() => {
+                  typeText("Sięgasz do kieszeni... pustka. Cholera. W pośpiechu zostawiłeś telefon w mieszkaniu.");
+                  setCmds(["wróć do mieszkania"]);
+              });
+              return true;
+          }
+          if (t === "wróć do mieszkania") {
+              SM.go("powrot_do_mieszkania");
+              return true;
+          }
+          return false;
+      }
+  });
+
+  SM.reg("powrot_do_mieszkania", {
+      async enter() {
+          await say([
+              "Biegniesz z powrotem na górę. Mieszkanie wita cię złowrogą ciszą.",
+              "Coś się zmieniło. Na regale jedna z książek jest lekko wysunięta."
+          ]);
+          setCmds(["weź telefon", "sprawdź książkę"]);
+      },
+      handle(t) {
+          if (t === "sprawdź książkę" && !G.bookChecked) {
+              G.bookChecked = true;
+              removeCmd(t);
+              say([
+                  "Podchodzisz do regału. To stara, zniszczona powieść grozy.",
+                  "Otwierasz ją. W środku, jako zakładka, tkwi stara fotografia.",
+                  "Widzisz na niej czwórkę dzieciaków bawiących się nocą na placu zabaw. Rozpoznajesz siebie, Sarę, Karolinę i Monikę.",
+                  "Na odwrocie ktoś napisał drżącym pismem: 'Czasem prawda ukrywa się w cieniu, a czasem w świetle'."
+              ]).then(() => {
+                 writeLine('<img src="fotografia.png" alt="Stara, zniszczona fotografia czwórki dzieci" style="max-width: 100%; max-height: 400px; border: 1px solid var(--line); border-radius: 4px; margin-top: 10px;">');
+                  scrollBottom(); 
+              });
+              if (window.Inventory) Inventory.add("stara fotografia");
+              if (window.Sanity) Sanity.add(-1, "street:photo_clue");
+              return true;
+          }
+          if (t === "weź telefon") {
+              removeCmd(t);
+              typeText("Chwytasz telefon leżący na stoliku i uruchamiasz go...").then(() => {
+                  openPhoneGame();
+              });
+              return true;
+          }
+          return false;
+      }
+  });
+
+  SM.reg("zebranie_grupy", {
+    async enter() {
+      setCmds([]);
+      await say([
+        "Kończysz rozmowę. Wiesz już wszystko, co trzeba. Wychodzisz z mieszkania po raz drugi, tym razem z poczuciem ostateczności.",
+        "Gdy schodzisz na dół, na pustą ulicę z piskiem opon wjeżdża stary samochód.",
+        "W środku widzisz Sarę, Karolinę i Monikę. Ich twarze są blade i zdeterminowane.",
+        "Bez słowa wsiadasz do środka. Podróż w serce ciemności właśnie się rozpoczyna."
+      ]);
+      nextBtn.disabled = false;
+    }
+  });
+ 
+  function handleInput(){
+    const t = cmd.value.trim().toLowerCase();
+    if(!t) return;
+    promptEcho(t);
+    if (["ekwipunek","inwentarz"].includes(t)) {
+        const list = (window.Inventory?.list() || []);
+        typeText(list.length ? "Ekwipunek: " + list.join(", ") : "Ekwipunek jest pusty.");
+    } else {
+        const handled = SM.handle(t);
+        if(!handled) typeText("Nie rozumiem.");
+    }
+    cmd.value = ""; cmd.focus();
+  }
+ 
+  send.addEventListener('click', handleInput);
+  cmd.addEventListener('keydown', e => { if(e.key === "Enter"){ e.preventDefault(); handleInput(); } });
+  speed.addEventListener('input', () => { speedIdx = +speed.value; speedLabel.textContent = labels[speedIdx]; });
+  fastBtn.addEventListener('click', () => { speedIdx = 0; speed.value = 0; speedLabel.textContent = labels[0]; });
+  restartBtn.addEventListener('click', () => {
+    window.SAN?.reset?.(100);
+    window.Inventory?.clear?.();
+    window.location.reload();
+  });
+ 
+  SM.go("start");
+})();
+</script>
+</body>
+</html>

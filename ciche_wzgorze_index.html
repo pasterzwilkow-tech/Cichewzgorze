@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kamil Radoń — Ciche Wzgórze</title>
+<style>
+  :root{ --bg:#07090c; --fg:#e6e6e6; --muted:#9aa0a6; --accent:#c7a26d; }
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0; background:radial-gradient(1200px 800px at 70% -10%, #11161e 0%, #07090c 60%, #05070a 100%); color:var(--fg); font:16px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans",Ubuntu,Cantarell}
+  .wrap{max-width:920px; margin:0 auto; padding:24px 16px 120px}
+  header{display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:8px}
+  h1{font-size:20px; margin:0; letter-spacing:.02em; color:#f1f1f1}
+  .tags{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+  .pill{display:inline-flex; gap:6px; align-items:center; padding:.25em .6em; border:1px solid rgba(255,255,255,.12); border-radius:999px; font-size:12px; color:#cbd5e1; margin-right:0}
+  .pill strong{color:#fff; font-weight:700}
+  .panel{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.35);
+    display:flex; flex-direction:column;
+  }
+  #log{height:60vh; min-height:340px; overflow:auto; padding:18px 18px 6px; scrollbar-width:thin}
+  #log::-webkit-scrollbar{height:8px; width:8px}
+  #log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1); border-radius:20px}
+  .line{margin:0 0 14px; opacity:.96}
+  .type{border-right:2px solid rgba(255,255,255,.65); animation:caret .85s steps(1) infinite}
+  @keyframes caret{50%{border-color:transparent}}
+  .toolbar{display:flex; gap:10px; align-items:center; color:var(--muted); font-size:14px; padding:10px 12px; border-top:1px solid rgba(255,255,255,.08); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02))}
+  input[type=range]{accent-color:#b5c4ff}
+  button{padding:10px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.06); color:var(--fg); cursor:pointer}
+  button:hover{background:rgba(255,255,255,.1)}
+  .sep{opacity:.35; margin:0 .25em}
+  #inputbar{display:flex; gap:10px; padding:10px; border-top:1px solid rgba(255,255,255,.08); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02))}
+  #cmd{flex:1; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.08); background:rgba(3,6,9,.6); color:var(--fg); outline:none}
+  #cmd::placeholder{color:#8892a6}
+  .note{color:var(--muted); font-size:13px; margin-top:8px}
+  #titleScreen{min-height:60vh; display:none; align-items:center; justify-content:center; flex-direction:column; gap:12px;
+    background: rgba(0,0,0,.35); border-bottom:1px solid rgba(255,255,255,.08); padding:20px;}
+  .title-inner{display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px 16px; width:100%; min-height:100%;}
+  .title-art{display:block; margin:0 auto; width:100%; max-width:720px; aspect-ratio:16/9; background:#0b0f14 center/contain no-repeat; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.08);}
+  #titleScreen h2{ margin:8px 0 4px; font-size:28px; letter-spacing:.06em; }
+  .subtitle{ color:var(--muted); margin:0 0 8px; }
+  .panel > #titleScreen { order:0; }
+  .panel > #log { order:1; }
+  .panel > .toolbar { order:3; }
+  .panel > #inputbar { order:4; }
+  body.title-phase .panel > #titleScreen { order: 1; display:flex; }
+  body.title-phase .panel > #inputbar   { order: 2; display:flex; margin-top:8px; border-top:none; }
+  body.title-phase .panel > #log        { order: 3; }
+  body.title-phase .panel > .toolbar    { order: 4; }
+
+  .cut-figure{margin:16px 0 8px; display:flex; justify-content:center}
+  .cut-art{width:100%; max-width:720px; height:auto; image-rendering:pixelated; image-rendering:crisp-edges;
+    border-radius:12px; border:1px solid rgba(255,255,255,.08); background:#0b0f14; box-shadow:0 10px 40px rgba(0,0,0,.45);}
+
+  /* === SANITY FX (CSS) === */
+  #sanFx{position:fixed; inset:0; pointer-events:none; z-index:50}
+  #sanFx .vig{position:absolute; inset:-10%; background:
+    radial-gradient(70% 70% at 50% 50%, transparent 45%, rgba(0,0,0,.65) 100%);
+    opacity:0; transition:opacity .35s ease}
+  #sanFx .scan{position:absolute; inset:0;
+    background:repeating-linear-gradient(to bottom, rgba(255,255,255,.035) 0 2px, rgba(0,0,0,0) 2px 4px);
+    mix-blend-mode:overlay; opacity:0; transition:opacity .35s ease}
+
+  body.san-t3 #sanFx .vig{opacity:.28}
+  body.san-t4 #sanFx .vig{opacity:.5}
+  body.san-t5 #sanFx .vig{opacity:.72}
+  body.san-t4 #sanFx .scan{opacity:.15}
+  body.san-t5 #sanFx .scan{opacity:.28}
+
+  body.san-t2 .panel{filter:saturate(.9) contrast(1.03)}
+  body.san-t3 .panel{filter:hue-rotate(-6deg) saturate(.85) contrast(1.06)}
+  body.san-t4 .panel{filter:hue-rotate(-12deg) saturate(.75) contrast(1.1) blur(.3px)}
+  body.san-t5 .panel{filter:hue-rotate(-18deg) saturate(.6) contrast(1.18) blur(.6px)}
+
+  @keyframes sanJitter {
+    0%, 97%, 100% { transform:translate3d(0,0,0) }
+    98% { transform:translate3d(.6px,-.6px,0) }
+    99% { transform:translate3d(-.7px,.5px,0) }
+  }
+  body.san-t4 .panel, body.san-t5 .panel { animation:sanJitter 7.5s infinite }
+
+  body.san-t5 #log .line{ text-shadow: 1px 0 rgba(255,0,0,.28), -1px 0 rgba(0,255,255,.22); }
+  .whisper{ color:#aeb4bd; font-style:italic; opacity:.8 }
+
+
+@keyframes cwJitter { 
+  0%{transform:translate(0,0)} 
+  25%{transform:translate(0.4px,-0.3px)} 
+  50%{transform:translate(-0.3px,0.4px)} 
+  75%{transform:translate(0.3px,0.2px)} 
+  100%{transform:translate(0,0)} 
+}
+@keyframes cwBleed { 
+  0%{ filter:none } 50%{ filter:contrast(1.08) saturate(1.1) } 100%{ filter:none } 
+}
+body.san-t5 #log .line { 
+  animation: cwJitter 0.7s infinite linear; 
+  text-shadow: 1px 0 rgba(255,0,0,.28), -1px 0 rgba(0,255,255,.22);
+}
+body.san-t5 .panel { 
+  animation: cwBleed 2.2s infinite ease-in-out; 
+}
+
+</style>
+</head>
+<body class="title-phase">
+  <!-- overlay FX -->
+  <div id="sanFx" aria-hidden="true">
+    <div class="vig"></div>
+    <div class="scan"></div>
+  </div>
+
+  <div class="wrap">
+    <header>
+      <h1>Kamil Radoń — Ciche Wzgórze</h1>
+      <div class="tags">
+        <span class="pill" id="sanBadge" title="Poczytalność (SAN)">
+          <strong>SAN</strong>&nbsp;<span id="sanVal">—</span>
+        </span>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div id="titleScreen" aria-hidden="false">
+        <div class="title-inner">
+          <div class="title-art" id="titleArt" role="img" aria-label="Ilustracja tytułowa"></div>
+          <h2>Ciche Wzgórze</h2>
+          <p class="subtitle">Napisz <b>start</b>, aby rozpocząć</p>
+        </div>
+      </div>
+
+      <div id="log" aria-live="polite"></div>
+
+      <div class="toolbar">
+        <button id="replay">Odtwórz ponownie</button>
+        <button id="fast">Przyspiesz</button>
+        <span class="sep">|</span>
+        <span>Tempo</span>
+        <input type="range" id="speed" min="0" max="3" step="1" value="3" />
+        <span id="speedLabel">powoli</span>
+        <span class="sep">|</span>
+        <button id="continue" disabled>Przejdź dalej</button>
+      </div>
+
+      <div id="inputbar">
+        <input id="cmd" autocomplete="off" spellcheck="false" placeholder="wpisz: start" />
+        <button id="send">Wyślij</button>
+      </div>
+    </section>
+
+    <p class="note" id="hint" style="display:none">Komendy: <b>start</b>, <b>pomoc</b>, <b>stan</b>.</p>
+  </div>
+
+  <!-- POCZYTALNOŚĆ -->
+  <script src="sanity.js"></script>
+<script>
+/* === SAN PERSIST (localStorage) === */
+(() => {
+  const SAN_KEY = "cw.san.v1";
+  const clamp = v => Math.max(0, Math.min(100, v|0));
+  const loadSAN = () => {
+    const raw = localStorage.getItem(SAN_KEY);
+    const n = +raw;
+    return Number.isFinite(n) ? clamp(n) : 100;
+  };
+  const saveSAN = v => { try{ localStorage.setItem(SAN_KEY, String(clamp(v))); }catch(e){} };
+
+  // udostępnij helpery globalnie (opcjonalnie)
+  window.SAN = {
+    key: SAN_KEY,
+    load: loadSAN,
+    save: saveSAN,
+    reset(v=100){ try{ localStorage.removeItem(SAN_KEY); }catch(e){}; saveSAN(v); if (window.Sanity?.set) Sanity.set(v); }
+  };
+
+  // cross-tab sync (jeśli ta sama gra otwarta w kilku kartach)
+  window.addEventListener("storage", (e) => {
+    if (e.key === SAN_KEY && e.newValue != null && window.Sanity?.set) {
+      const next = clamp(+e.newValue);
+      if (Number.isFinite(next) && window.Sanity.get && Sanity.get() !== next) {
+        Sanity.set(next);
+      }
+    }
+  });
+})();
+</script>
+
+  <script>
+  (() => {
+    const TITLE_IMAGE_URL = "start.png";
+    const END_IMAGE_URL   = "pixelart.png";
+
+    // ===== SANITY bootstrap =====
+    const sanValEl = document.getElementById("sanVal");
+    const toolbar  = document.querySelector(".toolbar");
+
+    function mountToolbarBadgeFallback(){
+      if (!toolbar) return;
+      if (document.getElementById("sanToolbarVal")) return;
+      const pill = document.createElement("span");
+      pill.className = "pill";
+      pill.innerHTML = '<strong>SAN</strong>&nbsp;<span id="sanToolbarVal">—</span>';
+      toolbar.appendChild(pill);
+    }
+
+    let sanTypeFactor = 1;
+    let sanWhisperTimer = null;
+    function tierFor(v){ return v>=80?1 : v>=60?2 : v>=40?3 : v>=20?4 : 5; }
+
+    function applySanityTier(t){
+      document.body.classList.remove('san-t1','san-t2','san-t3','san-t4','san-t5');
+      document.body.classList.add('san-t'+t);
+      sanTypeFactor = [1.0, 0.95, 0.9, 0.85, 0.8][t-1] || 1;
+
+      if (sanWhisperTimer) { clearInterval(sanWhisperTimer); sanWhisperTimer = null; }
+      if (t >= 4) {
+        sanWhisperTimer = setInterval(()=>{
+          if (document.body.classList.contains('title-phase')) return;
+          if (Math.random() < 0.35) {
+            const pool = ["…to nie ona…","…nie odwracaj się…","…słyszysz?…","…nie jesteś sam…","…znowu patrzą…"];
+            writeLine(`<span class="whisper">${pool[Math.floor(Math.random()*pool.length)]}</span>`);
+          }
+        }, 9000);
+      }
+
+      // Scramble start/stop for tier 5
+      if (sanScrambleTimer) { clearInterval(sanScrambleTimer); sanScrambleTimer = null; }
+      if (t === 5) {
+        sanScrambleTimer = setInterval(()=>{
+          if (document.body.classList.contains('title-phase')) return;
+          scrambleLogOnce(0.10, 160);
+        }, 900);
+      }
+    }
+
+    // Scramble effect for very low sanity
+    let sanScrambleTimer = null;
+    function scrambleLogOnce(intensity = 0.10, duration = 150) {
+      const spans = log.querySelectorAll('.line span, .line');
+      if (!spans.length) return;
+      const target = spans[Math.floor(Math.random() * spans.length)];
+      const original = target.textContent;
+      if (!original || original.length < 2) return;
+      const idx = Math.max(1, Math.floor(original.length * intensity));
+      let chars = original.split('');
+      for (let i = 0; i < idx; i++) {
+        const p = Math.floor(Math.random() * chars.length);
+        if (!/\s/.test(chars[p])) {
+          const code = chars[p].codePointAt(0);
+          chars[p] = String.fromCodePoint(code + 1);
+        }
+      }
+      target.textContent = chars.join('');
+      setTimeout(() => { target.textContent = original; }, duration + Math.floor(Math.random()*120));
+    }
+
+    function syncSan(v){
+      if (sanValEl) sanValEl.textContent = `${v}/100`;
+      const tb = document.getElementById("sanToolbarVal");
+      if (tb) tb.textContent = `${v}/100`;
+      applySanityTier(tierFor(v));
+    }
+
+   if (window.Sanity && typeof Sanity.init === "function") {
+  // start z localStorage zamiast twardego 100
+  const _startSAN = (window.SAN?.load ? window.SAN.load() : 100);
+  Sanity.init({ start: _startSAN, mount: ".toolbar" });
+  mountToolbarBadgeFallback();
+
+  // zapis każdej zmiany + odświeżenie UI
+  const _onSanChange = (v) => { try{ window.SAN?.save?.(v); }catch(e){}; syncSan(v); };
+
+  if (typeof Sanity.subscribe === "function")      Sanity.subscribe(_onSanChange);
+  else if (typeof Sanity.onChange === "function")  Sanity.onChange(_onSanChange);
+  syncSan(Sanity.get?.() ?? _startSAN);
+} else {
+  mountToolbarBadgeFallback();
+  syncSan(window.SAN?.load?.() ?? 100);
+}
+
+    // ===== TYPEWRITER / UI =====
+    const SPEEDS = [0, 2, 10, 60];
+    let speedIdx = 3;
+    const labels = ["natychmiast","szybko","standard","powoli"];
+    const log = document.getElementById('log');
+    const replayBtn = document.getElementById('replay');
+    const fastBtn = document.getElementById('fast');
+    const speed = document.getElementById('speed');
+    const speedLabel = document.getElementById('speedLabel');
+    const continueBtn = document.getElementById('continue');
+    const inputbar = document.getElementById('inputbar');
+    const cmd = document.getElementById('cmd');
+    const send = document.getElementById('send');
+    const hint = document.getElementById('hint');
+    const titleScreen = document.getElementById('titleScreen');
+    const titleArt = document.getElementById('titleArt');
+
+    function scrollBottom(){ log.scrollTop = log.scrollHeight; }
+    function writeLine(html){ const d=document.createElement('div'); d.className='line'; d.innerHTML=html; log.appendChild(d); scrollBottom(); return d; }
+
+    async function typeText(text){
+      const d = writeLine(""); const s=document.createElement('span'); s.className="type"; d.appendChild(s);
+      let ms = SPEEDS[speedIdx];
+      ms = Math.max(0, Math.round(ms * sanTypeFactor));
+      if(ms<=0){ s.innerHTML = text; s.classList.remove('type'); return; }
+      for(const ch of text){
+        s.innerHTML += ch;
+        await new Promise(r=>setTimeout(r,ms));
+        scrollBottom();
+      }
+      s.classList.remove('type');
+    }
+
+    // Glitche liter (jeśli sanity.js ma wrapTypeText)
+    let type = (t)=>typeText(t);
+    if (window.Sanity && typeof Sanity.wrapTypeText === "function") {
+      const _orig = typeText;
+      type = (txt)=> (Sanity.get && Sanity.get()<20 ? Sanity.wrapTypeText(_orig)(txt) : _orig(txt));
+    }
+
+    const escapeHtml = s => s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+    function writePrompt(t){ writeLine("&gt; "+escapeHtml(t)); }
+
+    let availableCommands = ["start","pomoc","stan"];
+    function setCommands(arr){ availableCommands = arr.slice(); updateHint(); }
+    function addCommand(c){ if(!availableCommands.includes(c)){ availableCommands.push(c); updateHint(); } }
+    function updateHint(){ hint.style.display="block"; hint.innerHTML="Komendy: " + availableCommands.map(c => "<b>"+c+"</b>").join(", ") + "."; }
+
+    const SceneManager = {
+      current:null, scenes:{},
+      register(n,s){ this.scenes[n]=s; },
+      async goTo(n){ if(this.current && this.scenes[this.current].exit) this.scenes[this.current].exit(); this.current=n; if(this.scenes[n].enter) await this.scenes[n].enter(); },
+      handle(t){ const s = this.scenes[this.current]; if(!s || !s.handle) return false; return !!s.handle(t); }
+    };
+
+    SceneManager.register("title",{
+      enter(){
+        document.body.classList.add("title-phase");
+        titleScreen.style.display="flex";
+        if(TITLE_IMAGE_URL) titleArt.style.backgroundImage = `url('${TITLE_IMAGE_URL}')`;
+        inputbar.style.display="flex";
+        setCommands(["start","pomoc","stan"]);
+        cmd.placeholder="wpisz: start";
+        cmd.focus();
+      },
+      exit(){ document.body.classList.remove("title-phase"); titleScreen.style.display="none"; },
+      handle(t){
+        if(t==="start") { SceneManager.goTo("cutscene"); return true; }
+        if(t==="stan"){ type(`Poczytalność: ${typeof Sanity?.get==="function" ? Sanity.get() : 100}/100`); return true; }
+        if(["pomoc","help","?"].includes(t)) { type("Napisz „start”, aby rozpocząć. Dostępne: start / pomoc / stan."); return true; }
+        type("Na ekranie tytułowym dostępne: start / pomoc / stan."); return true;
+      }
+    });
+
+    const CUT_LINES = [
+      "Bywa czasem tak, że zdajesz sobie sprawę, iż śnisz, ale nie możesz się obudzić.",
+      "Otaczał mnie las. Mroczny i przerażający, jakby wyrwany z najgorszych dziecięcych koszmarów.",
+      "Biegłem, choć moje kroki nie wydawały dźwięku. Gęsta mgła snuła się między drzewami.",
+      "Czułem, jak przenika przez ubranie i osiada na skórze.",
+      "W pewnym momencie coś zamajaczyło między drzewami. Mała, dziecięca sylwetka w skromnej, niebieskiej sukience.",
+      "Zatrzymałem się gwałtownie.",
+      "„To nie może być przecież ona!” — pomyślałem przerażony.",
+      "Postać zniknęła między drzewami, a ja ruszyłem za nią bezwiednie.",
+      "— Zaczekaj! — to co miało być krzykiem okazał się ledwie szeptem. Biegłem jednak dalej, zapominając o strachu i zmęczeniu.",
+      "Dotarłem na niewielką polanę. Czekała już na mnie. Stała tyłem, drobna i bezbronna.",
+      "Powoli odwróciła się w moją stronę. Blada twarz, usta wykrzywione w grymasie, błękitne oczy pełne pogardy.",
+      "Z cienia za jej plecami wyłoniła się wysoka, groteskowa istota, nieludzko chuda, z ramionami sięgającymi niemal do kolan.",
+      "Koścista ręka, zakończona długimi szponami, zacisnęła się na dłoni dziewczynki.",
+      "Głowa istoty, pozbawiona rysów, drżała w ekscytacji.",
+      "Z pustego miejsca po ustach rozbrzmiała ogłuszająca fala dźwięków — setki głosów krzyczących jednocześnie.",
+      "Upadłem na kolana, zatykając uszy. Dziewczynka odwróciła się i zniknęła w mroku, prowadzona za rękę.",
+      "…",
+      "Budzę się z krzykiem, mokry od lepkiego potu.",
+      "Pokój tonie w półmroku. Blade światło księżyca sączy się przez okno.",
+      "Spoglądam na budzik. Jest trzecia nad ranem."
+    ];
+
+    function showEndArt(){
+      if(!END_IMAGE_URL) return;
+      const fig = document.createElement('figure');
+      fig.className = 'cut-figure';
+      const img = document.createElement('img');
+      img.src = END_IMAGE_URL;
+      img.alt = "Pikselart: dziewczynka i istota bez twarzy w lesie.";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.className = "cut-art";
+      fig.appendChild(img);
+      log.appendChild(fig);
+      scrollBottom();
+    }
+
+    SceneManager.register("cutscene", {
+      async enter(){
+        setCommands([]);
+        continueBtn.disabled = true;
+        for(const line of CUT_LINES){ await type(line); }
+
+        const roll = Math.floor(Math.random()*4)+1;
+        writeLine(`<em>Rzut k4: ${roll}</em>`);
+        if (window.Sanity){
+          if (typeof Sanity.add === "function")      Sanity.add(-roll, "cutscene:k4");
+          else if (typeof Sanity.change === "function") Sanity.change(-roll);
+          else if (Sanity.set && Sanity.get)           Sanity.set(Sanity.get()-roll);
+          if (typeof Sanity.effect === "function")     Sanity.effect("shake");
+        }
+
+        writeLine("<em>— KONIEC CUTSCENKI —</em>");
+        showEndArt();
+
+        continueBtn.disabled = false;
+        addCommand("dalej");
+        addCommand("stan");
+      },
+      handle(t){
+        if(t==="stan"){ type(`Poczytalność: ${typeof Sanity?.get==="function" ? Sanity.get() : 100}/100`); return true; }
+        if(["dalej","idź dalej","idz dalej","naprzód","naprzod"].includes(t)){
+          window.location.href = "room.html";
+          return true;
+        }
+        type("Po zakończeniu cutscenki wpisz „dalej” (albo „stan” by sprawdzić Poczytalność).");
+        return true;
+      },
+      exit(){ continueBtn.disabled = true; }
+    });
+
+    continueBtn.addEventListener('click', () => {
+      if(SceneManager.current==="cutscene"){ window.location.href = "room.html"; }
+    });
+    speed.addEventListener('input', () => { speedIdx = +speed.value; speedLabel.textContent = labels[speedIdx]; });
+    fastBtn.addEventListener('click', () => { speedIdx = 0; speed.value = 0; speedLabel.textContent = labels[0]; });
+    replayBtn.addEventListener('click', () => { window.location.reload(); });
+
+    function handleInput(){
+      const t = cmd.value.trim().toLowerCase(); if(!t) return;
+      writePrompt(t);
+      const handled = SceneManager.handle(t);
+      if(!handled){ type("Nie rozumiem. Dostępne komendy: "+availableCommands.join(", ")+"."); }
+      cmd.value=""; cmd.focus();
+    }
+    send.addEventListener('click', handleInput);
+    cmd.addEventListener('keydown', e => { if(e.key==="Enter"){ e.preventDefault(); handleInput(); } });
+
+    SceneManager.goTo("title");
+  })();
+  </script>
+</body>
+</html>
